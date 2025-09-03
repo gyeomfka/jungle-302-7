@@ -1,4 +1,5 @@
 from db import get_db
+from utils.video_chat import create_study_confirmation_notification
 
 
 def get_studies_by_tab(user_id, tab):
@@ -27,7 +28,7 @@ def get_studies_by_tab(user_id, tab):
                     }
                 )
             )
-            
+
             # 각 스터디에 대한 지원 상태 정보 추가
             for study in studies:
                 study['application_status'] = get_application_status(study, user_id)
@@ -133,8 +134,8 @@ def get_study_participants(study_id):
         return [], []
 
 
-def update_confirmed_candidates(study_id, confirmed_candidates):
-    """스터디의 확정 참가자를 업데이트합니다."""
+def update_confirmed_candidates(study_id, confirmed_candidates, study_date=None):
+    """스터디의 확정 참가자와 날짜를 업데이트합니다."""
     try:
         db = get_db()
 
@@ -147,13 +148,37 @@ def update_confirmed_candidates(study_id, confirmed_candidates):
         if len(confirmed_candidates) > study.get("max_participants", 0):
             return False, "최대 참가자 수를 초과했습니다."
 
-        # 확정 참가자 업데이트
+        # 업데이트할 데이터 준비
+        update_data = {
+            "confirmed_candidate": confirmed_candidates,
+            "is_closed": True
+        }
+
+        # 스터디 날짜가 제공된 경우 추가
+        if study_date:
+            update_data["study_date"] = study_date
+
+        # 확정 참가자 및 스터디 날짜 업데이트
         result = db.study.update_one(
             {"id": study_id},
-            {"$set": {"confirmed_candidate": confirmed_candidates}}
+            {"$set": update_data}
         )
 
         if result.modified_count > 0:
+            # 확정된 사용자들에게 알림 및 이메일 발송
+            try:
+                study_name = study.get("name", "스터디")
+                final_date = study_date or study.get("study_date", "")
+
+                if confirmed_candidates and final_date:
+                    create_study_confirmation_notification(
+                        confirmed_candidates,
+                        study_name,
+                        final_date
+                    )
+            except Exception as notification_error:
+                print(f"알림 발송 오류 (스터디 확정은 완료됨): {notification_error}")
+
             return True, "참가자가 확정되었습니다."
         else:
             return False, "변경사항이 없습니다."
@@ -163,17 +188,6 @@ def update_confirmed_candidates(study_id, confirmed_candidates):
         return False, "확정 처리 중 오류가 발생했습니다."
 
 
-def get_user_profile(user_id):
-    """사용자 프로필 정보를 조회합니다."""
-    try:
-        db = get_db()
-        user = db.user.find_one({"id": user_id})
-        return user
-
-    except Exception as e:
-        print(f"사용자 프로필 조회 오류: {e}")
-        return None
-
 
 def get_application_status(study, user_id):
     """스터디에 대한 사용자의 지원 상태를 반환합니다."""
@@ -182,11 +196,11 @@ def get_application_status(study, user_id):
         # 확정 참여자인 경우
         if user_id in study.get("confirmed_candidate", []):
             return "confirmed"  # 참여
-        
+
         # 스터디가 마감된 경우
         if study.get("is_closed", False):
             return "closed"  # 다음 기회에
-            
+
         # 지원했지만 아직 대기중인 경우
         for candidate in study.get("candidate", []):
             print(candidate.get("user_id", []))
@@ -194,9 +208,9 @@ def get_application_status(study, user_id):
             print(user_id in candidate.get("user_id", []))
             if user_id in candidate.get("user_id", []):
                 return "pending"  # 대기중
-                
+
         return "not_applied"  # 지원하지 않음
-        
+
     except Exception as e:
         print(f"지원 상태 확인 오류: {e}")
         return "unknown"

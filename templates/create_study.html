@@ -13,7 +13,7 @@ endblock %} {% block page_content %}
       type="text"
       placeholder="스터디 이름을 입력해주세요."
       required
-    />
+    >
 
     <label for="studyInfo" class="block text-sm font-medium text-gray-700 mb-2"
       >스터디 소개</label
@@ -35,7 +35,7 @@ endblock %} {% block page_content %}
       name="maxParticipants"
       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900 placeholder-gray-500"
       type="number"
-    />
+    >
     <label for="category" class="block text-sm font-medium text-gray-700 mb-2"
       >관심사 카테고리</label
     >
@@ -62,7 +62,6 @@ endblock %} {% block page_content %}
       <option value="py">파이썬</option>
       <option value="cs">CS</option>
     </select>
-    <br />
 
     <label
       for="expectedDate"
@@ -74,8 +73,7 @@ endblock %} {% block page_content %}
       name="expectedDate"
       type="datetime-local"
       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-gray-900"
-    />
-    <br />
+    >
 
     <div id="expectedDateList">
       <ul></ul>

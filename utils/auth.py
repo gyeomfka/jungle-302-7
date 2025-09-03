@@ -285,36 +285,48 @@ def delete_user_account(user_id):
     """사용자 계정 및 관련 데이터를 모두 삭제합니다."""
     try:
         db = get_db()
-        
+
         # 1. 사용자가 호스트인 스터디들 삭제
         deleted_studies = db.study.delete_many({"host_id": user_id})
         print(f"삭제된 스터디 수: {deleted_studies.deleted_count}")
-        
+
         # 2. 다른 스터디의 confirmed_candidate에서 사용자 제거
         confirmed_result = db.study.update_many(
             {"confirmed_candidate": user_id},
             {"$pull": {"confirmed_candidate": user_id}}
         )
         print(f"confirmed_candidate에서 제거: {confirmed_result.modified_count}건")
-        
+
         # 3. 다른 스터디의 candidate.user_id에서 사용자 제거
         candidate_result = db.study.update_many(
             {"candidate.user_id": user_id},
             {"$pull": {"candidate.$.user_id": user_id}}
         )
         print(f"candidate에서 제거: {candidate_result.modified_count}건")
-        
+
         # 4. 사용자와 관련된 알림 삭제 (있다면)
         db.notification.delete_many({"user_id": user_id})
-        
+
         # 5. 사용자 계정 삭제
         deleted_user = db.user.delete_one({"id": user_id})
-        
+
         if deleted_user.deleted_count > 0:
             return True, "회원탈퇴가 완료되었습니다."
         else:
             return False, "사용자를 찾을 수 없습니다."
-            
+
     except Exception as e:
         print(f"회원탈퇴 처리 오류: {e}")
         return False, f"탈퇴 처리 중 오류가 발생했습니다: {str(e)}"
+
+
+def get_user_profile(user_id):
+    """사용자 프로필 정보를 조회합니다."""
+    try:
+        db = get_db()
+        user = db.user.find_one({"id": user_id})
+        return user
+
+    except Exception as e:
+        print(f"사용자 프로필 조회 오류: {e}")
+        return None

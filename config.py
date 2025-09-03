@@ -17,6 +17,10 @@ class BaseConfig:
     KAKAO_CLIENT_SECRET = os.environ.get("KAKAO_CLIENT_SECRET")
     KAKAO_REDIRECT_URI = os.environ.get("KAKAO_REDIRECT_URI")
 
+    # SMTP
+    GMAIL_USER = os.environ.get("GMAIL_USER")
+    GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD")
+
 
 class DevConfig(BaseConfig):
     """개발: AWS EC2의 원격 MongoDB로 접속"""
