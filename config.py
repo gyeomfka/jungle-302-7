@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv(verbose=True)
 
+
 class BaseConfig:
     # 공통
     MONGO_DB_NAME = os.environ.get("MONGO_DB_NAME")
@@ -10,12 +11,13 @@ class BaseConfig:
     MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD")
     # authSource는 보통 admin
     MONGO_AUTH_SOURCE = os.environ.get("MONGO_AUTH_SOURCE")
-    
+
     # 카카오 OAuth
     KAKAO_CLIENT_ID = os.environ.get("KAKAO_CLIENT_ID")
     KAKAO_CLIENT_SECRET = os.environ.get("KAKAO_CLIENT_SECRET")
     KAKAO_REDIRECT_URI = os.environ.get("KAKAO_REDIRECT_URI")
-    
+
+
 class DevConfig(BaseConfig):
     """개발: AWS EC2의 원격 MongoDB로 접속"""
     # 예) EC2 퍼블릭 IP 또는 도메인
@@ -28,6 +30,7 @@ class DevConfig(BaseConfig):
         f"@{EC2_HOST}:{EC2_PORT}/?authSource={BaseConfig.MONGO_AUTH_SOURCE}"
     )
 
+
 # TODO: 추후 작동하는지 확인 필요
 class ProdConfig(BaseConfig):
     """운영: 로컬 MongoDB로 접속"""
@@ -39,8 +42,10 @@ class ProdConfig(BaseConfig):
     def MONGO_URI(self):
         return (
             f"mongodb://{self.MONGO_USERNAME}:{self.MONGO_PASSWORD}"
-            f"@{self.LOCAL_HOST}:{self.LOCAL_PORT}/?authSource={self.MONGO_AUTH_SOURCE}"
+            f"@{self.LOCAL_HOST}:{self.LOCAL_PORT}/"
+            f"?authSource={self.MONGO_AUTH_SOURCE}"
         )
+
 
 def get_config():
     env = os.environ.get("APP_ENV", "development").lower()

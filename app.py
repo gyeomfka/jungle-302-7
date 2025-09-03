@@ -16,8 +16,14 @@ from utils.auth import (
     handle_logout,
     update_user_profile,
 )
-# from utils.study import get_studies_by_tab, get_study_by_id, apply_to_study  # TODO
-from utils.study import apply_to_study
+from utils.study import (
+    apply_to_study,
+    get_study_participants,
+    update_confirmed_candidates,
+    get_user_profile,
+    get_studies_by_tab,
+    get_study_by_id
+)
 from __mocks__.study import mock_studies
 
 app = Flask(__name__)
@@ -63,10 +69,9 @@ def study():
         tab = "all"
 
     # 탭에 따라 스터디 데이터 조회
-    # studies = get_studies_by_tab(request.current_user_id, tab)  # TODO
+    studies = get_studies_by_tab(request.current_user_id, tab) 
 
-    return render_template("study.html", studies=mock_studies, tab=tab)
-    # return render_template('study.html', studies=studies, tab=tab) # TODO
+    return render_template('study.html', studies=studies, tab=tab)
 
 
 @app.route("/study/create")
@@ -78,13 +83,23 @@ def study_create():
 @app.route("/study/<string:study_id>")
 @token_required
 def study_detail(study_id):
-    # study = get_study_by_id(study_id)  # TODO
+    study = get_study_by_id(study_id)
+    current_user_id = request.current_user_id
+     
+    # 스터디 호스트인 경우 참가자 정보도 함께 조회
+    confirmed_participants = []
+    pending_candidates = []
+    
+    if current_user_id == study.get("host_id"):
+        confirmed_participants, pending_candidates = get_study_participants(study_id)
+    
     html = render_template(
-        "components/study/study_detail_fragment.html", study=mock_studies[0]
+        "components/study/study_detail_fragment.html", 
+        study=study,
+        current_user_id=current_user_id,
+        confirmed_participants=confirmed_participants,
+        pending_candidates=pending_candidates
     )
-    # html = render_template(  # TODO
-    #     'components/study/study_detail_fragment.html', study=study
-    # )
     response = make_response(html, 200)
     response.headers["Content-Type"] = "text/html; charset=utf-8"
     return response
@@ -92,7 +107,7 @@ def study_detail(study_id):
 
 @app.route("/study/<string:study_id>/apply", methods=["POST"])
 @token_required
-def study_apply(study_id):  # TODO: 실제 데이터로 확인
+def study_apply(study_id):
     if request.headers.get("X-Requested-With") != "XMLHttpRequest":
         return make_response("잘못된 요청입니다.", 400)
 
@@ -112,6 +127,51 @@ def study_apply(study_id):  # TODO: 실제 데이터로 확인
     except Exception as e:
         print(f"스터디 신청 API 오류: {e}")
         return make_response("신청 처리 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/study/<string:study_id>/confirm-candidates", methods=["POST"])
+@token_required
+def confirm_candidates(study_id):
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    try:
+        data = request.get_json()
+        confirmed_candidates = data.get("confirmed_candidates", [])
+        
+        success, message = update_confirmed_candidates(study_id, confirmed_candidates)
+        
+        if success:
+            return make_response(message, 200)
+        else:
+            return make_response(message, 400)
+            
+    except Exception as e:
+        print(f"참가자 확정 API 오류: {e}")
+        return make_response("확정 처리 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/user/<string:user_id>/profile")
+@token_required
+def user_profile_api(user_id):
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    try:
+        user = get_user_profile(user_id)
+        
+        if not user:
+            return make_response("사용자를 찾을 수 없습니다.", 404)
+        
+        # MongoDB ObjectId 제거
+        if '_id' in user:
+            del user['_id']
+            
+        return jsonify(user)
+        
+    except Exception as e:
+        print(f"사용자 프로필 API 오류: {e}")
+        return make_response("사용자 정보 조회 중 오류가 발생했습니다.", 500)
 
 
 @app.route("/profile")

@@ -17,7 +17,10 @@ def get_token_from_request():
         except IndexError:
             return None
 
-    return [request.cookies.get("access_token"), request.cookies.get("refresh_token")]
+    return [
+        request.cookies.get("access_token"),
+        request.cookies.get("refresh_token")
+    ]
 
 
 def token_required(f):
@@ -31,9 +34,10 @@ def token_required(f):
             # access_token이 없으면 refresh_token으로 갱신
             result = refresh_access_token(refresh_token)
             if isinstance(result, tuple):
-                access_token, expires_in, refresh_token, refresh_token_expires_in = (
-                    result
-                )
+                (
+                    access_token, expires_in, refresh_token,
+                    refresh_token_expires_in
+                ) = result
                 need_token_refresh = True
             else:
                 # 갱신 실패시 로그인 페이지로 리다이렉트
@@ -120,7 +124,10 @@ def refresh_access_token(refresh_token):
     if "refresh_token" in token_json:
         refresh_token = token_json["refresh_token"]
         refresh_token_expires_in = token_json["refresh_token_expires_in"]
-        return access_token, expires_in, refresh_token, refresh_token_expires_in
+        return (
+            access_token, expires_in, refresh_token,
+            refresh_token_expires_in
+        )
     else:
         # refresh_token이 없으면 기존 refresh_token 유지
         return access_token, expires_in, refresh_token, None
@@ -170,7 +177,9 @@ def create_or_update_user(user_info):
     kakao_id = str(user_info["id"])
     kakao_profile = user_info.get("kakao_account", {})
     email = kakao_profile.get("email", "")
-    nickname = kakao_profile.get("profile", {}).get("nickname", f"사용자{kakao_id}")
+    nickname = kakao_profile.get("profile", {}).get(
+        "nickname", f"사용자{kakao_id}"
+    )
 
     db = get_db()
     user = db.user.find_one({"id": kakao_id})
@@ -189,7 +198,8 @@ def create_or_update_user(user_info):
         # 기존 사용자 업데이트
         user_id = user["id"]
         db.user.update_one(
-            {"id": user_id}, {"$set": {"updated_at": datetime.now(timezone.utc)}}
+            {"id": user_id},
+            {"$set": {"updated_at": datetime.now(timezone.utc)}}
         )
         return {"user_id": user_id, "is_new_user": False}
 
@@ -250,7 +260,9 @@ def update_user_profile(user_id, interests, description):
 
         # 관심사를 리스트로 변환
         interest_list = [
-            interest.strip() for interest in interests.split(",") if interest.strip()
+            interest.strip()
+            for interest in interests.split(",")
+            if interest.strip()
         ]
 
         # 사용자 프로필 업데이트

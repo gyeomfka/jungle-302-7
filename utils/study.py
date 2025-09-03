@@ -13,7 +13,8 @@ def get_studies_by_tab(user_id, tab):
             # 나의 스터디 (host_id가 현재 사용자)
             studies = list(db.study.find({"host_id": user_id}))
         elif tab == "applied":
-            # 지원한 스터디 (confirmed_candidate, rejected_candidate, candidate의 user_id에 포함)
+            # 지원한 스터디
+            # (confirmed_candidate, rejected_candidate, candidate의 user_id에 포함)
             studies = list(
                 db.study.find(
                     {
@@ -22,7 +23,8 @@ def get_studies_by_tab(user_id, tab):
                             {"rejected_candidate": user_id},
                             {
                                 "candidate.user_id": user_id
-                            },  # TODO: user_id가 리스트인데 잘 가지고 오는지 확인 필요
+                            },
+                            # TODO: user_id가 리스트인데 잘 가지고 오는지 확인 필요
                         ]
                     }
                 )
@@ -88,3 +90,83 @@ def apply_to_study(study_id, user_id, selected_dates):
     except Exception as e:
         print(f"스터디 신청 오류: {e}")
         return False, "신청 처리 중 오류가 발생했습니다."
+
+
+def get_study_participants(study_id):
+    """스터디 참가자 정보를 조회합니다."""
+    try:
+        db = get_db()
+
+        study = db.study.find_one({"id": study_id})
+        if not study:
+            return None, None
+
+        # 확정된 참가자 정보 조회
+        confirmed_participants = []
+        if study.get("confirmed_candidate"):
+            confirmed_users = list(db.user.find(
+                {"id": {"$in": study["confirmed_candidate"]}}
+            ))
+            confirmed_participants = confirmed_users
+
+        # 대기 중인 지원자 정보 조회 (confirmed에 없는 사람들)
+        pending_user_ids = set()
+        for candidate in study.get("candidate", []):
+            for user_id in candidate.get("user_id", []):
+                if user_id not in study.get("confirmed_candidate", []):
+                    pending_user_ids.add(user_id)
+
+        pending_candidates = []
+        if pending_user_ids:
+            pending_users = list(db.user.find(
+                {"id": {"$in": list(pending_user_ids)}}
+            ))
+            pending_candidates = pending_users
+
+        return confirmed_participants, pending_candidates
+
+    except Exception as e:
+        print(f"참가자 정보 조회 오류: {e}")
+        return [], []
+
+
+def update_confirmed_candidates(study_id, confirmed_candidates):
+    """스터디의 확정 참가자를 업데이트합니다."""
+    try:
+        db = get_db()
+
+        # 스터디 존재 확인
+        study = db.study.find_one({"id": study_id})
+        if not study:
+            return False, "스터디를 찾을 수 없습니다."
+
+        # 최대 참가자 수 확인
+        if len(confirmed_candidates) > study.get("max_participants", 0):
+            return False, "최대 참가자 수를 초과했습니다."
+
+        # 확정 참가자 업데이트
+        result = db.study.update_one(
+            {"id": study_id},
+            {"$set": {"confirmed_candidate": confirmed_candidates}}
+        )
+
+        if result.modified_count > 0:
+            return True, "참가자가 확정되었습니다."
+        else:
+            return False, "변경사항이 없습니다."
+
+    except Exception as e:
+        print(f"참가자 확정 오류: {e}")
+        return False, "확정 처리 중 오류가 발생했습니다."
+
+
+def get_user_profile(user_id):
+    """사용자 프로필 정보를 조회합니다."""
+    try:
+        db = get_db()
+        user = db.user.find_one({"id": user_id})
+        return user
+
+    except Exception as e:
+        print(f"사용자 프로필 조회 오류: {e}")
+        return None
