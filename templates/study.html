@@ -3,6 +3,7 @@
 <script>
   async function loadStudyDetail(studyId, event) {
     event.preventDefault();
+
     try {
       const res = await fetch(`/study/${studyId}`, {
         headers: {
@@ -12,11 +13,55 @@
 
       if (res.ok) {
         const html = await res.text();
-        document.getElementById("study_detail").innerHTML = html;
-        console.log(html);
+        const parser = new DOMParser();
+        const studyDetail = parser.parseFromString(html, "text/html").body
+          .firstElementChild;
+        const prev = document.getElementById("study_detail");
+        if (prev) prev.replaceWith(studyDetail);
+        else document.getElementById("study_wrapper").append(studyDetail);
       }
     } catch (error) {
       console.error("스터디 상세 정보를 불러오는데 실패했습니다:", error);
+    }
+  }
+
+  function closeDetail() {
+    const studyDetail = document.getElementById("study_detail");
+    if (studyDetail) {
+      studyDetail.remove();
+    }
+  }
+  async function applyToStudy(studyId) {
+    const selectedDates = [];
+    const checkboxes = document.querySelectorAll(
+      ' input[name="selected_dates" ]:checked'
+    );
+    checkboxes.forEach((checkbox) => {
+      selectedDates.push(checkbox.value);
+    });
+    if (selectedDates.length === 0) {
+      alert("참여하고 싶은 날짜를 선택해주세요.");
+      return;
+    }
+    try {
+      const response = await fetch(`/study/${studyId}/apply`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({ selected_dates: selectedDates }),
+      });
+      if (response.ok) {
+        alert("스터디 참여 신청이 완료되었습니다!");
+        closeDetail();
+      } else {
+        const errorText = await response.text();
+        alert(`신청 실패: ${errorText}`);
+      }
+    } catch (error) {
+      console.error("스터디 신청 오류:", error);
+      alert("신청 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
   }
 </script>
@@ -61,12 +106,14 @@
   </div>
 
   <!-- 메인 콘텐츠 -->
-  <div class="flex">
-    <div class="max-w-6xl mx-auto px-4 py-6 flex-1">
+  <div class="flex mx-auto px-4 py-6 gap-4" id="study_wrapper">
+    <div class="max-w-6xl flex-1">
       {% if studies %} {% include "components/study/study_list.html" %} {% else
       %} {% include "components/study/empty_state.html" %} {% endif %}
     </div>
-    <section id="study_detail"></section>
+    <!-- 스터디 상세보기 생성 위치 -->
   </div>
 </div>
 {% endblock %}
+
+<!-- TODO: 무한 스크롤 구현 -->
