@@ -1,0 +1,160 @@
+<!-- templates/room.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Room {{ room_id }}</title>
+    <link rel="shortcut icon" href="#" />
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body>
+    <h2>Room: {{ room_id }}</h2>
+    <div
+      id="videos"
+      class="flex flex-wrap justify-center items-start gap-2 p-2"
+    >
+      <div class="video-wrapper w-full md:w-3/4 lg:w-2/3 xl:w-1/2 relative">
+        <video
+          id="localVideo"
+          autoplay
+          playsinline
+          muted
+          class="w-full h-auto rounded-lg bg-black"
+        ></video>
+      </div>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="inputs">
+      <input
+        type="text"
+        rows="3"
+        placeholder="메세지"
+        name="message"
+        id="message"
+      />
+      <button type="button" name="send" id="send-btn" onclick="sendMessage()">
+        보내기
+      </button>
+    </div>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+      const socketio = io();
+      const room = "{{ room_id }}";
+      const peers = {};
+      const videoContainer = document.getElementById("videos");
+
+      let localStream;
+      async function start() {
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        document.getElementById("localVideo").srcObject = localStream;
+        socketio.emit("join", { room });
+      }
+      start();
+
+      socketio.on("user-joined", async ({ userId }) => {
+        const peer = createPeer(userId);
+        peers[userId] = peer;
+
+        const offer = await peer.createOffer();
+        await peer.setLocalDescription(offer);
+        socketio.emit("signal", { room, offer, to: userId });
+      });
+
+      socketio.on("signal", async (data) => {
+        const { from, offer, answer, candidate } = data;
+        if (!peers[from]) {
+          peers[from] = createPeer(from);
+        }
+        const peer = peers[from];
+
+        if (offer) {
+          await peer.setRemoteDescription(new RTCSessionDescription(offer));
+          const answerDesc = await peer.createAnswer();
+          await peer.setLocalDescription(answerDesc);
+          socketio.emit("signal", { room, answer: answerDesc, to: from });
+        } else if (answer) {
+          await peer.setRemoteDescription(new RTCSessionDescription(answer));
+        } else if (candidate) {
+          await peer.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+      });
+
+      function createPeer(userId) {
+        const peer = new RTCPeerConnection();
+
+        localStream
+          .getTracks()
+          .forEach((track) => peer.addTrack(track, localStream));
+
+        peer.ontrack = (event) => {
+          let video = document.getElementById("video-" + userId);
+          if (!video) {
+            video = document.createElement("video");
+            video.id = "video-" + userId;
+            video.autoplay = true;
+            video.playsinline = true;
+            videoContainer.appendChild(video);
+          }
+          video.srcObject = event.streams[0];
+        };
+
+        peer.onicecandidate = (event) => {
+          if (event.candidate) {
+            socketio.emit("signal", {
+              room,
+              candidate: event.candidate,
+              to: userId,
+            });
+          }
+        };
+
+        return peer;
+      }
+
+      socketio.on("user-left", ({ userId }) => {
+        deletePeerVideo(userId);
+      });
+
+      function deletePeerVideo(userId) {
+        // Find the video element for this peer
+        const video = document.getElementById("video-" + userId);
+
+        // Remove it from the DOM if it exists
+        if (video) {
+          video.srcObject = null; // stop the stream
+          video.remove();
+        }
+      }
+
+      // 메세지 보내기
+      const messages = document.getElementById("messages");
+
+      const createMessage = (msg) => {
+        const content = `
+            <div class="text">
+                <span>
+                    <strong>이름</strong>: ${msg}
+                </span>
+                <span class="muted">
+                    ${new Date().toLocaleString()}
+                </span>
+            </div>
+            `;
+        messages.innerHTML += content;
+      };
+
+      socketio.on("message", (data) => {
+        createMessage(data.message);
+      });
+
+      const sendMessage = () => {
+        const message = document.getElementById("message");
+        if (message.value == "") return;
+        socketio.emit("message", { data: message.value });
+        message.value = "";
+      };
+    </script>
+  </body>
+</html>

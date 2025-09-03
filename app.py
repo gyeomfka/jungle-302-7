@@ -1,80 +1,107 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for
-import urllib.parse
-from db import get_db
-from config import get_config
-from utils.auth import token_required, handle_kakao_callback, handle_logout, update_user_profile
+# app.py
+from flask import Flask, render_template, request, redirect, url_for, session
+from flask_socketio import SocketIO, join_room, leave_room, emit, send
 
 app = Flask(__name__)
-cfg = get_config()
+app.config['SECRET_KEY'] = 'secret!'
+socketio = SocketIO(app)
 
-# TODO: 설정하지 않은 나머지 경로는 /study로 이동
+
+# 현재 생성된 방들
+rooms = {}
+
+def sessionHandler():
+    session.get("room")
+
+
 @app.route('/')
-def home():
-   return redirect('/study')
+def index():
+    return render_template('index.html')
 
-@app.route('/login')
-def login_page():
-   return render_template('login.html')
+@app.route('/join', methods=['POST'])
+def join():
+    session.clear()
+    if request.method == "POST":
+        room_id = request.form.get("room")
+        if not room_id:
+            return render_template('index.html', error = "방 ID를 입력해주세요", room_id = room_id)
+        
+        if room_id not in rooms:
+            rooms[room_id] = {"members" : 0, "messages": []}
+        
+        session["room"] = room_id
+    return redirect(url_for("room", room_id=room_id))
 
 
-@app.route('/auth/kakao')
-def kakao_login():
-   kakao_auth_url = "https://kauth.kakao.com/oauth/authorize"
-   params = {
-       'client_id': cfg.KAKAO_CLIENT_ID,
-       'redirect_uri': cfg.KAKAO_REDIRECT_URI,
-       'response_type': 'code'
-   }
-   auth_url = f"{kakao_auth_url}?{urllib.parse.urlencode(params)}"
-   return redirect(auth_url)
+@app.route('/room/<room_id>')
+def room(room_id):
+    # url room_id이랑 session room_id이랑 비교
+    if room_id != session.get("room"):
+        return render_template('index.html', error = "url != session_id")
 
-@app.route('/auth/kakao/callback')
-def kakao_callback():
-   code = request.args.get('code')
-   return handle_kakao_callback(code)
+    return render_template("room.html", room_id=room_id)
 
-@app.route('/study')
-@token_required
-def study():
-   # 스터디 목록
-   return jsonify({
-       'message': '로그인 성공!',
-       'user_id': request.current_user_id
-   })
 
-@app.route('/profile')
-@token_required
-def profile():
-   return render_template('profile.html')
+@socketio.on("join")
+def handle_join(data):
+    room = data["room"]
+    user_id = request.sid
+    join_room(room)
+    rooms[room]["members"] += 1
 
-@app.route('/profile/update', methods=['POST'])
-@token_required
-def profile_update():
-   interests = request.form.get('interests', '')
-   description = request.form.get('description', '')
-   
-   success = update_user_profile(
-      request.current_user_id,
-      interests,
-      description
-   )
-   
-   if success:
-      return redirect(url_for('study'))
-   else:
-      return render_template('profile.html', error="프로필 업데이트에 실패했습니다. 다시 시도해주세요.")
-      
-@app.route('/logout')
-def logout():
-   return handle_logout()
+    emit("user-joined", {"userId": user_id}, room=room, include_self=False)
 
-@app.route('/test')
-def test():
-   db = get_db()
-   user = list(db.user.find({}))
-   print(user)
-   return jsonify({"count": len(user)})
 
-if __name__ == '__main__':  
-   app.run('0.0.0.0',port=5001,debug=True)
 
+@socketio.on("signal")
+def handle_signal(data):
+    to_user = data["to"]
+    emit("signal", {**data, "from": request.sid}, room=to_user)
+
+
+@socketio.on("message")
+def message(data):
+    room = session.get("room")
+    if room not in rooms:
+        return
+    
+    content = {
+        "name": "이름",
+        "message": data["data"]
+    }
+    send(content, to=room)
+    rooms[room]["messages"].append(content)
+
+
+
+# 이게 있어야 disconnect 작동가능 - 소켓 서버 열결 코드는 "join"
+@socketio.on("connect")
+def connect():
+    return
+
+@socketio.on("disconnect")
+def disconnect():
+    room = session.get('room')
+    leave_room(room)
+    if room in rooms:
+        rooms[room]["members"] -= 1
+        if rooms[room]["members"] <= 0:
+            del rooms[room]
+    user_id = request.sid
+    emit("user-left", {"userId": user_id}, room=room)   
+
+
+@socketio.on("share-screen")
+def handle_share_screen(data):
+    room = data["room"]
+    # Notify everyone else in the room to expect a new track
+    emit("screen-shared", {"userId": request.sid}, room=room, include_self=False)
+
+@socketio.on("stop-screen")
+def handle_stop_screen(data):
+    room = data["room"]
+    emit("screen-stopped", {"userId": request.sid}, room=room, include_self=False)
+
+    
+if __name__ == "__main__":
+    socketio.run(app, debug=True)
