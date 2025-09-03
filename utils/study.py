@@ -78,7 +78,7 @@ def apply_to_study(study_id, user_id, selected_dates):
             return False, "이미 확정된 참여자입니다."
 
         # 마감된 스터디인지 확인
-        if study.get('isClosed'):
+        if study.get('is_closed'):
             return False, "스터디가 이미 마감되었습니다."
 
         # 선택된 날짜들에 사용자 ID 추가
@@ -184,7 +184,7 @@ def get_application_status(study, user_id):
             return "confirmed"  # 참여
         
         # 스터디가 마감된 경우
-        if study.get("isClosed", False):
+        if study.get("is_closed", False):
             return "closed"  # 다음 기회에
             
         # 지원했지만 아직 대기중인 경우

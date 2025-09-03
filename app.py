@@ -26,6 +26,12 @@ from utils.study import (
     get_studies_by_tab,
     get_study_by_id
 )
+from utils.notification import (
+    get_user_notifications,
+    get_unread_notification_count,
+    mark_notification_as_read,
+    mark_all_notifications_as_read
+)
 
 app = Flask(__name__)
 cfg = get_config()
@@ -129,7 +135,7 @@ def create_study():
             "candidate": candidate,
             "max_participants": int(data.get("maxParticipants", 5)),
             "confirmed_candidate": [],  # 빈 배열로 초기화
-            "isClosed": False,   # 빈 배열로 초기화
+            "is_closed": False,   # 빈 배열로 초기화
             "study_date": ""           # 빈 문자열로 초기화
         }
         
@@ -253,11 +259,13 @@ def profile():
 @token_required
 def profile_update():
    interests = request.form.get('interests', '')
+   phone = request.form.get('phone', '')
    description = request.form.get('description', '')
    
    success = update_user_profile(
       request.current_user_id,
       interests,
+      phone,
       description
    )
    
@@ -285,6 +293,100 @@ def delete_account():
         return make_response(message, 200)
     else:
         return make_response(message, 500)
+
+
+@app.route("/notifications")
+@token_required  
+def notifications():
+    """사용자 알림 목록을 반환합니다."""
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    try:
+        user_id = request.current_user_id
+        notifications = get_user_notifications(user_id)
+        
+        # MongoDB ObjectId를 문자열로 변환
+        for notification in notifications:
+            notification['_id'] = str(notification['_id'])
+            if 'created_at' in notification:
+                notification['created_at'] = notification['created_at'].isoformat()
+                
+        return jsonify({
+            'success': True,
+            'notifications': notifications
+        })
+        
+    except Exception as e:
+        print(f"알림 목록 조회 오류: {e}")
+        return make_response("알림을 불러오는 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/notifications/unread-count")
+@token_required
+def unread_notification_count():
+    """읽지 않은 알림 개수를 반환합니다."""
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    try:
+        user_id = request.current_user_id
+        count = get_unread_notification_count(user_id)
+        
+        return jsonify({
+            'success': True,
+            'count': count
+        })
+        
+    except Exception as e:
+        print(f"읽지 않은 알림 개수 조회 오류: {e}")
+        return make_response("알림 개수를 불러오는 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/notifications/<string:notification_id>/read", methods=["POST"])
+@token_required
+def mark_notification_read(notification_id):
+    """특정 알림을 읽음 상태로 변경합니다."""
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    try:
+        user_id = request.current_user_id
+        success = mark_notification_as_read(notification_id, user_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': '알림이 읽음 처리되었습니다.'
+            })
+        else:
+            return make_response("알림 처리에 실패했습니다.", 400)
+            
+    except Exception as e:
+        print(f"알림 읽음 처리 오류: {e}")
+        return make_response("알림 처리 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/notifications/mark-all-read", methods=["POST"])
+@token_required
+def mark_all_notifications_read():
+    """모든 알림을 읽음 상태로 변경합니다."""
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    try:
+        user_id = request.current_user_id
+        count = mark_all_notifications_as_read(user_id)
+        
+        return jsonify({
+            'success': True,
+            'message': f'{count}개의 알림이 읽음 처리되었습니다.',
+            'count': count
+        })
+        
+    except Exception as e:
+        print(f"모든 알림 읽음 처리 오류: {e}")
+        return make_response("알림 처리 중 오류가 발생했습니다.", 500)
 
 
 @app.route("/test")

@@ -1,0 +1,69 @@
+<!-- 알림 드롭다운 컴포넌트 -->
+<div class="relative" id="notificationDropdown">
+  <button
+    type="button"
+    onclick="toggleNotificationDropdown()"
+    class="relative flex items-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
+    id="notificationButton"
+  >
+    <!-- 종 아이콘 -->
+    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+      <path
+        d="M10 2C7.79086 2 6 3.79086 6 6V7.64706C6 8.28094 5.78041 8.89607 5.38197 9.38197L4.23607 10.7639C3.45054 11.7038 4.1269 13 5.34315 13H14.6569C15.8731 13 16.5495 11.7038 15.7639 10.7639L14.618 9.38197C14.2196 8.89607 14 8.28094 14 7.64706V6C14 3.79086 12.2091 2 10 2Z"
+      />
+      <path
+        d="M8.5 15C8.5 16.3807 9.11929 17 10.5 17C11.8807 17 12.5 16.3807 12.5 15H8.5Z"
+      />
+    </svg>
+
+    <!-- 알림 표시 점 -->
+    <span
+      id="notificationBadge"
+      class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden"
+    >
+      <span id="notificationCount">0</span>
+    </span>
+  </button>
+
+  <!-- 알림 드롭다운 메뉴 -->
+  <div
+    id="notificationDropdownMenu"
+    class="hidden absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-50 border max-h-96 overflow-y-auto"
+  >
+    <div class="py-2">
+      <!-- 헤더 -->
+      <div class="px-4 py-2 border-b flex justify-between items-center">
+        <h3 class="text-sm font-medium text-gray-900">알림</h3>
+        <button
+          type="button"
+          onclick="markAllNotificationsAsRead()"
+          class="text-xs text-blue-600 hover:text-blue-800"
+        >
+          모두 읽음
+        </button>
+      </div>
+
+      <!-- 알림 목록 -->
+      <div id="notificationList" class="max-h-80 overflow-y-auto">
+        <!-- 로딩 상태 -->
+        <div
+          id="notificationLoading"
+          class="px-4 py-8 text-center text-gray-500"
+        >
+          <div
+            class="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-2"
+          ></div>
+          알림을 불러오는 중...
+        </div>
+
+        <!-- 알림이 없을 때 -->
+        <div
+          id="noNotifications"
+          class="hidden px-4 py-8 text-center text-gray-500"
+        >
+          새로운 알림이 없습니다.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

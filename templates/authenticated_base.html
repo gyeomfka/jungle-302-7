@@ -18,51 +18,11 @@ endblock %} {% block content %}
             스터디 만들기
           </button>
 
-          <!-- 사용자 드롭다운 -->
-          <div class="relative" id="userDropdown">
-            <button
-              type="button"
-              onclick="toggleUserDropdown()"
-              class="flex items-center p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full"
-              id="userDropdownButton"
-            >
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fill-rule="evenodd"
-                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                  clip-rule="evenodd"
-                ></path>
-              </svg>
-            </button>
+          <!-- 알림 드롭다운 -->
+          {% include 'components/header_notifications.html' %}
 
-            <!-- 드롭다운 메뉴 -->
-            <div
-              id="userDropdownMenu"
-              class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border"
-            >
-              <div class="py-1">
-                <a
-                  href="/profile"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  프로필 수정
-                </a>
-                <a
-                  href="/logout"
-                  class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                >
-                  로그아웃
-                </a>
-                <button
-                  type="button"
-                  onclick="deleteAccount()"
-                  class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                >
-                  회원탈퇴
-                </button>
-              </div>
-            </div>
-          </div>
+          <!-- 사용자 드롭다운 -->
+          {% include 'components/header_user_dropdown.html' %}
         </div>
       </div>
     </div>
@@ -76,51 +36,4 @@ endblock %} {% block content %}
   {% endblock %}
 </div>
 
-<script>
-  // 사용자 드롭다운 토글
-  function toggleUserDropdown() {
-    const menu = document.getElementById("userDropdownMenu");
-    menu.classList.toggle("hidden");
-  }
-
-  // 외부 클릭 시 드롭다운 닫기
-  document.addEventListener("click", function (event) {
-    const dropdown = document.getElementById("userDropdown");
-    const menu = document.getElementById("userDropdownMenu");
-
-    if (!dropdown.contains(event.target)) {
-      menu.classList.add("hidden");
-    }
-  });
-
-  // 회원탈퇴 확인
-  async function deleteAccount() {
-    if (
-      confirm("정말로 회원탈퇴를 하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
-    ) {
-      if (confirm("모든 데이터가 삭제됩니다. 정말 진행하시겠습니까?")) {
-        try {
-          const response = await fetch("/user/delete-account", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-Requested-With": "XMLHttpRequest",
-            },
-          });
-
-          if (response.ok) {
-            alert("회원탈퇴가 완료되었습니다.");
-            window.location.href = "/login";
-          } else {
-            const errorText = await response.text();
-            alert(`탈퇴 실패: ${errorText}`);
-          }
-        } catch (error) {
-          console.error("회원탈퇴 오류:", error);
-          alert("탈퇴 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
-        }
-      }
-    }
-  }
-</script>
-{% endblock %}
+{% include 'components/header_scripts.html' %} {% endblock %}

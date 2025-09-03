@@ -254,7 +254,7 @@ def handle_logout():
     return response
 
 
-def update_user_profile(user_id, interests, description):
+def update_user_profile(user_id, interests, phone, description):
     try:
         db = get_db()
 
@@ -268,6 +268,7 @@ def update_user_profile(user_id, interests, description):
         # 사용자 프로필 업데이트
         update_data = {
             "interest_of_subject": interest_list,
+            "phone": phone,
             "description": description,
         }
 

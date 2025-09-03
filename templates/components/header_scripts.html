@@ -1,0 +1,251 @@
+<script>
+  // 알림 관련 전역 변수
+  let notificationData = [];
+
+  // 페이지 로드시 읽지 않은 알림 개수 가져오기
+  document.addEventListener("DOMContentLoaded", function () {
+    updateNotificationBadge();
+  });
+
+  // 사용자 드롭다운 토글
+  function toggleUserDropdown() {
+    const menu = document.getElementById("userDropdownMenu");
+    const notificationMenu = document.getElementById(
+      "notificationDropdownMenu"
+    );
+
+    // 알림 드롭다운 닫기
+    notificationMenu.classList.add("hidden");
+    menu.classList.toggle("hidden");
+  }
+
+  // 알림 드롭다운 토글
+  function toggleNotificationDropdown() {
+    const menu = document.getElementById("notificationDropdownMenu");
+    const userMenu = document.getElementById("userDropdownMenu");
+
+    // 사용자 드롭다운 닫기
+    userMenu.classList.add("hidden");
+
+    if (menu.classList.contains("hidden")) {
+      menu.classList.remove("hidden");
+      loadNotifications();
+    } else {
+      menu.classList.add("hidden");
+    }
+  }
+
+  // 외부 클릭 시 드롭다운 닫기
+  document.addEventListener("click", function (event) {
+    const userDropdown = document.getElementById("userDropdown");
+    const userMenu = document.getElementById("userDropdownMenu");
+    const notificationDropdown = document.getElementById(
+      "notificationDropdown"
+    );
+    const notificationMenu = document.getElementById(
+      "notificationDropdownMenu"
+    );
+
+    if (!userDropdown.contains(event.target)) {
+      userMenu.classList.add("hidden");
+    }
+
+    if (!notificationDropdown.contains(event.target)) {
+      notificationMenu.classList.add("hidden");
+    }
+  });
+
+  // 읽지 않은 알림 개수 업데이트
+  async function updateNotificationBadge() {
+    try {
+      const response = await fetch("/notifications/unread-count", {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const badge = document.getElementById("notificationBadge");
+        const count = document.getElementById("notificationCount");
+
+        if (data.count > 0) {
+          badge.classList.remove("hidden");
+          count.textContent = data.count > 99 ? "99+" : data.count;
+        } else {
+          badge.classList.add("hidden");
+        }
+      }
+    } catch (error) {
+      console.error("알림 개수 업데이트 오류:", error);
+    }
+  }
+
+  // 알림 목록 로드
+  async function loadNotifications() {
+    const loading = document.getElementById("notificationLoading");
+    const list = document.getElementById("notificationList");
+    const noNotifications = document.getElementById("noNotifications");
+
+    // 로딩 상태 표시
+    loading.classList.remove("hidden");
+    noNotifications.classList.add("hidden");
+
+    try {
+      const response = await fetch("/notifications", {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        notificationData = data.notifications;
+
+        loading.classList.add("hidden");
+
+        if (notificationData.length === 0) {
+          noNotifications.classList.remove("hidden");
+        } else {
+          renderNotifications();
+        }
+      } else {
+        throw new Error("알림을 불러올 수 없습니다.");
+      }
+    } catch (error) {
+      console.error("알림 로드 오류:", error);
+      loading.classList.add("hidden");
+      list.innerHTML =
+        '<div class="px-4 py-4 text-center text-red-500">알림을 불러오는데 실패했습니다.</div>';
+    }
+  }
+
+  // 알림 목록 렌더링
+  function renderNotifications() {
+    const list = document.getElementById("notificationList");
+
+    const notificationsHtml = notificationData
+      .map((notification) => {
+        const isUnread = !notification.read;
+        const bgClass = isUnread ? "bg-blue-50" : "bg-white";
+        const textClass = isUnread ? "text-gray-900" : "text-gray-600";
+
+        const createdAt = new Date(notification.created_at).toLocaleString(
+          "ko-KR",
+          {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          }
+        );
+
+        return `
+        <div 
+          class="px-4 py-3 border-b cursor-pointer hover:bg-gray-50 ${bgClass}"
+          onclick="markNotificationAsRead('${notification._id}')"
+        >
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <p class="text-sm ${textClass}">${notification.message}</p>
+              <p class="text-xs text-gray-400 mt-1">${createdAt}</p>
+            </div>
+            ${
+              isUnread
+                ? '<div class="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1 flex-shrink-0"></div>'
+                : ""
+            }
+          </div>
+        </div>
+      `;
+      })
+      .join("");
+
+    list.innerHTML = notificationsHtml;
+  }
+
+  // 특정 알림 읽음 처리
+  async function markNotificationAsRead(notificationId) {
+    try {
+      const response = await fetch(`/notifications/${notificationId}/read`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (response.ok) {
+        // 로컬 데이터 업데이트
+        const notification = notificationData.find(
+          (n) => n._id === notificationId
+        );
+        if (notification) {
+          notification.read = true;
+        }
+
+        // UI 업데이트
+        renderNotifications();
+        updateNotificationBadge();
+      }
+    } catch (error) {
+      console.error("알림 읽음 처리 오류:", error);
+    }
+  }
+
+  // 모든 알림 읽음 처리
+  async function markAllNotificationsAsRead() {
+    try {
+      const response = await fetch("/notifications/mark-all-read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (response.ok) {
+        // 로컬 데이터 업데이트
+        notificationData.forEach((notification) => {
+          notification.read = true;
+        });
+
+        // UI 업데이트
+        renderNotifications();
+        updateNotificationBadge();
+      }
+    } catch (error) {
+      console.error("모든 알림 읽음 처리 오류:", error);
+    }
+  }
+
+  // 회원탈퇴 확인
+  async function deleteAccount() {
+    if (
+      confirm("정말로 회원탈퇴를 하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+    ) {
+      if (confirm("모든 데이터가 삭제됩니다. 정말 진행하시겠습니까?")) {
+        try {
+          const response = await fetch("/user/delete-account", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          });
+
+          if (response.ok) {
+            alert("회원탈퇴가 완료되었습니다.");
+            window.location.href = "/login";
+          } else {
+            const errorText = await response.text();
+            alert(`탈퇴 실패: ${errorText}`);
+          }
+        } catch (error) {
+          console.error("회원탈퇴 오류:", error);
+          alert("탈퇴 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+        }
+      }
+    }
+  }
+</script>
