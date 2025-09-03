@@ -1,8 +1,5 @@
-{% extends "authenticated_base.html" %} 
-
-{% block title %}스터디{% endblock %} 
-
-{% block nav_tabs %}
+{% extends "authenticated_base.html" %} {% block title %}스터디{% endblock %} {%
+block nav_tabs %}
 <div class="flex space-x-6">
   <a
     href="/study?tab=all"
@@ -23,20 +20,16 @@
     지원한 스터디
   </a>
 </div>
-{% endblock %}
-
-{% block main_content %}
+{% endblock %} {% block main_content %}
 <!-- 메인 콘텐츠 -->
 <div class="flex mx-auto px-4 py-6 gap-4" id="study_wrapper">
   <div class="max-w-6xl flex-1">
-    {% if studies %} {% include "components/study/study_list.html" %} {% else
-    %} {% include "components/study/empty_state.html" %} {% endif %}
+    {% if studies %} {% include "components/study/study_list.html" %} {% else %}
+    {% include "components/study/empty_state.html" %} {% endif %}
   </div>
   <!-- 스터디 상세보기 생성 위치 -->
 </div>
-{% endblock %}
-
-{% block scripts %}
+{% endblock %} {% block scripts %}
 <script>
   async function loadStudyDetail(studyId, event) {
     event.preventDefault();
@@ -68,7 +61,7 @@
       studyDetail.remove();
     }
   }
-  
+
   async function applyToStudy(studyId) {
     const selectedDates = [];
     const checkboxes = document.querySelectorAll(

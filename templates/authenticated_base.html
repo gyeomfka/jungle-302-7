@@ -1,8 +1,5 @@
-{% extends "base.html" %}
-
-{% block body_class %}min-h-screen bg-gray-100{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block body_class %}min-h-screen bg-gray-100{%
+endblock %} {% block content %}
 <div class="min-h-screen bg-gray-100">
   <!-- 공통 헤더 -->
   <div class="bg-white shadow-sm border-b">
@@ -30,7 +27,11 @@
               id="userDropdownButton"
             >
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                <path
+                  fill-rule="evenodd"
+                  d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                  clip-rule="evenodd"
+                ></path>
               </svg>
             </button>
 
@@ -78,43 +79,45 @@
 <script>
   // 사용자 드롭다운 토글
   function toggleUserDropdown() {
-    const menu = document.getElementById('userDropdownMenu');
-    menu.classList.toggle('hidden');
+    const menu = document.getElementById("userDropdownMenu");
+    menu.classList.toggle("hidden");
   }
 
   // 외부 클릭 시 드롭다운 닫기
-  document.addEventListener('click', function(event) {
-    const dropdown = document.getElementById('userDropdown');
-    const menu = document.getElementById('userDropdownMenu');
-    
+  document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("userDropdown");
+    const menu = document.getElementById("userDropdownMenu");
+
     if (!dropdown.contains(event.target)) {
-      menu.classList.add('hidden');
+      menu.classList.add("hidden");
     }
   });
 
   // 회원탈퇴 확인
   async function deleteAccount() {
-    if (confirm('정말로 회원탈퇴를 하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
-      if (confirm('모든 데이터가 삭제됩니다. 정말 진행하시겠습니까?')) {
+    if (
+      confirm("정말로 회원탈퇴를 하시겠습니까? 이 작업은 되돌릴 수 없습니다.")
+    ) {
+      if (confirm("모든 데이터가 삭제됩니다. 정말 진행하시겠습니까?")) {
         try {
-          const response = await fetch('/user/delete-account', {
-            method: 'POST',
+          const response = await fetch("/user/delete-account", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest',
+              "Content-Type": "application/json",
+              "X-Requested-With": "XMLHttpRequest",
             },
           });
-          
+
           if (response.ok) {
-            alert('회원탈퇴가 완료되었습니다.');
-            window.location.href = '/login';
+            alert("회원탈퇴가 완료되었습니다.");
+            window.location.href = "/login";
           } else {
             const errorText = await response.text();
             alert(`탈퇴 실패: ${errorText}`);
           }
         } catch (error) {
-          console.error('회원탈퇴 오류:', error);
-          alert('탈퇴 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+          console.error("회원탈퇴 오류:", error);
+          alert("탈퇴 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
         }
       }
     }
