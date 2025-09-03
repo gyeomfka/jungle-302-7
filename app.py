@@ -1,17 +1,16 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, make_response
-import requests
+from flask import Flask, render_template, jsonify, request, redirect, url_for
 import urllib.parse
-from datetime import datetime, timezone
 from db import get_db
 from config import get_config
-from utils.auth import token_required, get_user_info
+from utils.auth import token_required, handle_kakao_callback, handle_logout
 
 app = Flask(__name__)
 cfg = get_config()
 
+# TODO: 설정하지 않은 나머지 경로는 /study로 이동
 @app.route('/')
 def home():
-   return render_template('index.html')
+   return redirect('/study')
 
 @app.route('/login')
 def login_page():
@@ -32,67 +31,7 @@ def kakao_login():
 @app.route('/auth/kakao/callback')
 def kakao_callback():
    code = request.args.get('code')
-
-   if not code:
-       return redirect(url_for('login_page'))
-   
-   token_url = "https://kauth.kakao.com/oauth/token"
-   token_data = {
-       'grant_type': 'authorization_code',
-       'client_id': cfg.KAKAO_CLIENT_ID,
-       'client_secret': cfg.KAKAO_CLIENT_SECRET,
-       'redirect_uri': cfg.KAKAO_REDIRECT_URI,
-       'code': code
-   }
-   
-   token_response = requests.post(token_url, data=token_data)
-   token_json = token_response.json()
-   
-   if 'access_token' not in token_json:
-       return redirect(url_for('login_page'))
-   
-   access_token = token_json['access_token']
-   expires_in = token_json['expires_in']
-   refresh_token = token_json['refresh_token']
-   refresh_token_expires_in = token_json['refresh_token_expires_in']
-   
-   user_info = get_user_info(access_token)
-   
-   kakao_id = str(user_info['id'])
-   kakao_profile = user_info.get('kakao_account', {})
-   email = kakao_profile.get('email', '')
-   nickname = kakao_profile.get('profile', {}).get('nickname', f'사용자{kakao_id}')
-   
-   db = get_db()
-   
-   user = db.user.find_one({'id': kakao_id})
-   
-   if not user:
-       user_data = {
-           'id': kakao_id,
-           'email': email,
-           'name': nickname,
-       }
-       result = db.user.insert_one(user_data)
-       user_id = result.inserted_id
-       response = make_response(redirect(url_for('profile')))
-   else:
-       user_id = user['id']
-       db.user.update_one(
-           {'id': user_id},
-           {'$set': {'updated_at': datetime.now(timezone.utc)}}
-       )
-       response = make_response(redirect(url_for('study')))
-
-   response.set_cookie('access_token', access_token, 
-                      max_age=expires_in,
-                      httponly=True, secure=False)
-   response.set_cookie('refresh_token', refresh_token,
-                      max_age=refresh_token_expires_in,
-                      httponly=True, secure=False)
-   request.current_user_id = str(user_id)
-   
-   return response
+   return handle_kakao_callback(code)
 
 @app.route('/study')
 @token_required
@@ -113,11 +52,7 @@ def profile():
 
 @app.route('/logout')
 def logout():
-   response = make_response(redirect(url_for('login_page')))
-   response.set_cookie('access_token', '', expires=0)
-   response.set_cookie('refresh_token', '', expires=0)
-   request.current_user_id = None
-   return response
+   return handle_logout()
 
 @app.route('/test')
 def test():

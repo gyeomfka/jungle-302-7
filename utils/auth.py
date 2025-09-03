@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 from flask import request, redirect, url_for, make_response
 from functools import wraps
 from config import get_config
+from db import get_db
 
 cfg = get_config()
 
@@ -75,22 +76,23 @@ def token_required(f):
     return decorated
 
 def refresh_access_token(refresh_token):
+    """리프레시 토큰으로 액세스 토큰을 갱신합니다."""
     if not refresh_token:
         return redirect(url_for('login_page'))
     
-    body = {
+    token_data = {
         'grant_type': 'refresh_token',
         'client_id': cfg.KAKAO_CLIENT_ID,
         'client_secret': cfg.KAKAO_CLIENT_SECRET,
         'refresh_token': refresh_token
     }
-    token_response = requests.post("https://kauth.kakao.com/oauth/token", data=body)
+    
+    token_response = requests.post("https://kauth.kakao.com/oauth/token", data=token_data)
     token_json = token_response.json()
 
     if 'access_token' not in token_json:
         return redirect(url_for('login_page'))
     
-   
     access_token = token_json['access_token']
     expires_in = token_json['expires_in']
     
@@ -113,7 +115,100 @@ def get_user_info(access_token):
    user_info = user_response.json()   
 
    if 'id' not in user_info:
-       return redirect(url_for('login_page'))
+       return None
    
    return user_info
+
+def get_kakao_tokens_from_code(code):
+    """카카오 인증 코드를 사용해서 토큰을 가져옵니다."""
+    token_url = "https://kauth.kakao.com/oauth/token"
+    token_data = {
+        'grant_type': 'authorization_code',
+        'client_id': cfg.KAKAO_CLIENT_ID,
+        'client_secret': cfg.KAKAO_CLIENT_SECRET,
+        'redirect_uri': cfg.KAKAO_REDIRECT_URI,
+        'code': code
+    }
+    
+    token_response = requests.post(token_url, data=token_data)
+    token_json = token_response.json()
+    
+    if 'access_token' not in token_json:
+        return None
+    
+    return {
+        'access_token': token_json['access_token'],
+        'expires_in': token_json['expires_in'],
+        'refresh_token': token_json['refresh_token'],
+        'refresh_token_expires_in': token_json['refresh_token_expires_in']
+    }
+
+def create_or_update_user(user_info):
+    """사용자 정보를 DB에 생성하거나 업데이트합니다."""
+    kakao_id = str(user_info['id'])
+    kakao_profile = user_info.get('kakao_account', {})
+    email = kakao_profile.get('email', '')
+    nickname = kakao_profile.get('profile', {}).get('nickname', f'사용자{kakao_id}')
+    
+    db = get_db()
+    user = db.user.find_one({'id': kakao_id})
+    
+    if not user:
+        # 새 사용자 생성
+        user_data = {
+            'id': kakao_id,
+            'email': email,
+            'name': nickname,
+            'created_at': datetime.now(timezone.utc)
+        }
+        result = db.user.insert_one(user_data)
+        return {'user_id': result.inserted_id, 'is_new_user': True}
+    else:
+        # 기존 사용자 업데이트
+        user_id = user['id']
+        db.user.update_one(
+            {'id': user_id},
+            {'$set': {'updated_at': datetime.now(timezone.utc)}}
+        )
+        return {'user_id': user_id, 'is_new_user': False}
+
+def handle_kakao_callback(code):
+    """카카오 OAuth 콜백을 처리합니다."""
+    if not code:
+        return redirect(url_for('login_page'))
+    
+    # 1. 인증 코드로 토큰 가져오기
+    tokens = get_kakao_tokens_from_code(code)
+    if not tokens:
+        return redirect(url_for('login_page'))
+    
+    # 2. 토큰으로 사용자 정보 가져오기
+    user_info = get_user_info(tokens['access_token'])
+    if not user_info:
+        return redirect(url_for('login_page'))
+    
+    # 3. 사용자 생성/업데이트
+    user_result = create_or_update_user(user_info)
+    
+    # 4. 리다이렉트 결정 (신규 사용자면 프로필, 기존 사용자면 스터디)
+    redirect_url = 'profile' if user_result['is_new_user'] else 'study'
+    response = make_response(redirect(url_for(redirect_url)))
+    
+    # 5. 쿠키에 토큰 설정
+    response.set_cookie('access_token', tokens['access_token'], 
+                       max_age=tokens['expires_in'],
+                       httponly=True, secure=False)
+    response.set_cookie('refresh_token', tokens['refresh_token'],
+                       max_age=tokens['refresh_token_expires_in'],
+                       httponly=True, secure=False)
+    
+    return response
+
+def handle_logout():
+    """로그아웃 처리 - 쿠키 삭제 후 로그인 페이지로 리다이렉트"""
+    response = make_response(redirect(url_for('login_page')))
+    response.set_cookie('access_token', '', expires=0)
+    response.set_cookie('refresh_token', '', expires=0)
+    request.current_user_id = None
+    return response
    
