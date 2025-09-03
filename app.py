@@ -8,6 +8,7 @@ from flask import (
     make_response,
 )
 import urllib.parse
+from bson import ObjectId
 from db import get_db
 from config import get_config
 from utils.auth import (
@@ -24,7 +25,6 @@ from utils.study import (
     get_studies_by_tab,
     get_study_by_id
 )
-from __mocks__.study import mock_studies
 
 app = Flask(__name__)
 cfg = get_config()
@@ -74,6 +74,74 @@ def study():
     return render_template('study.html', studies=studies, tab=tab)
 
 
+@app.route("/study/create", methods=['GET'])
+@token_required
+def study_create_page():
+   if request.method == 'GET':
+       return render_template("create_study.html")
+   
+
+@app.route("/study/create", methods=['POST'])
+@token_required
+def create_study():
+    try:
+        db = get_db()
+        data = request.get_json()
+        
+        # 필수 필드 검증
+        name = data.get("studyName")
+        if not name or name.strip() == "":
+            return jsonify({'result': 'error', 'message': '스터디 이름을 입력해주세요.'}), 400
+        
+        host_id = request.current_user_id
+        if not host_id:
+            return jsonify({'result': 'error', 'message': '로그인이 필요합니다.'}), 401
+            
+        subject = data.get("category")
+        if not subject:
+            return jsonify({'result': 'error', 'message': '카테고리를 선택해주세요.'}), 400
+            
+        expected_date_list = data.get("expectedDateList", [])
+        if not expected_date_list:
+            return jsonify({'result': 'error', 'message': '예상 모임 날짜를 하나 이상 선택해주세요.'}), 400
+        
+        # candidate 배열 생성 - {date: string, user_id: string} 형식
+        candidate = []
+        for item in expected_date_list:
+            selected_date = item.get('selectedDate')
+            if selected_date:
+                candidate.append({
+                    "date": selected_date,
+                    "user_id": []  # 빈 배열로 초기화
+                })
+        
+        if not candidate:
+            return jsonify({'result': 'error', 'message': '유효한 모임 날짜를 선택해주세요.'}), 400
+        
+        # 스터디 데이터 생성 (MongoDB 스키마에 맞게)
+        study = {
+            "id": str(ObjectId()),  # 고유 ID 생성
+            "host_id": host_id,
+            "name": name.strip(),
+            "description": data.get("studyIntro", "").strip(),
+            "subject": subject,
+            "candidate": candidate,
+            "max_participants": int(data.get("maxParticipants", 5)),
+            "confirmed_candidate": [],  # 빈 배열로 초기화
+            "isClosed": False,   # 빈 배열로 초기화
+            "study_date": ""           # 빈 문자열로 초기화
+        }
+        
+        db.study.insert_one(study)
+        return jsonify({'result': 'success'})
+        
+    except ValueError as e:
+        return jsonify({'result': 'error', 'message': '잘못된 데이터 형식입니다.'}), 400
+    except Exception as e:
+        print(f"스터디 생성 오류: {e}")
+        return jsonify({'result': 'error', 'message': '스터디 생성 중 오류가 발생했습니다.'}), 500
+
+
 @app.route("/study/<string:study_id>")
 @token_required
 def study_detail(study_id):
@@ -87,12 +155,16 @@ def study_detail(study_id):
     if current_user_id == study.get("host_id"):
         confirmed_participants, pending_candidates = get_study_participants(study_id)
     
+    # 쿼리스트링에서 탭 정보 가져오기
+
+    tab = request.args.get('tab', 'all')
     html = render_template(
         "components/study/study_detail_fragment.html", 
         study=study,
         current_user_id=current_user_id,
         confirmed_participants=confirmed_participants,
-        pending_candidates=pending_candidates
+        pending_candidates=pending_candidates,
+        tab=tab
     )
     response = make_response(html, 200)
     response.headers["Content-Type"] = "text/html; charset=utf-8"
@@ -192,32 +264,6 @@ def profile_update():
       return render_template('profile.html', error="프로필 업데이트에 실패했습니다. 다시 시도해주세요.")
       
 
-@app.route("/study/create", methods=['POST'])
-@token_required
-def create_study():
-   db = get_db()
-   data = request.get_json()
-   
-   name = data.get("studyName")
-   host_id = "test_user"
-   description = data.get("studyIntro")
-   category = data.get("category")
-   max_participants = data.get("maxParticipants")
-   candidate = [item['selectedDate'] for item in data['expectedDateList']]
-
-   study = {
-      "name": name,
-      "host_id": host_id,
-      "description": description,
-      "category": category,
-      "max_participants": max_participants,
-      "candidate": candidate
-   }
-
-   db.study.insert_one(study)
-   return jsonify({'result': 'success'})
-
-
 @app.route('/logout')
 def logout():
     return handle_logout()
@@ -227,7 +273,6 @@ def logout():
 def test():
     db = get_db()
     user = list(db.user.find({}))
-    print(user)
     return jsonify({"count": len(user)})
 
 

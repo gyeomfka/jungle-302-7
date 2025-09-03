@@ -25,9 +25,10 @@
     </button>
   </div>
 
-  {% if current_user_id == study.host_id %} {% include
-  'components/study/host_management_view.html' %} {% else %} {% include
-  'components/study/general_user_view.html' %} {% endif %}
+  {% if tab == 'my' %} {% include 'components/study/host_management_view.html'
+  %} {% elif tab == 'applied' %} {% include 'components/study/applied_view.html'
+  %} {% else %} {% include 'components/study/general_user_view.html' %} {% endif
+  %}
 </section>
 
 {% include 'components/study/user_profile_dialog.html' %}

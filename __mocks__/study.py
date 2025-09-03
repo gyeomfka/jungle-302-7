@@ -12,7 +12,7 @@ mock_studies = [
         ],
         "max_participants": 6,
         "confirmed_candidate": ["4426666879", "user003"],
-        "rejected_candidate": [],
+        "isClosed": True,
         "study_date": "2025-01-10"
     },
     {
@@ -28,7 +28,7 @@ mock_studies = [
         ],
         "max_participants": 4,
         "confirmed_candidate": ["4426666879"],
-        "rejected_candidate": ["user006"],
+        "isClosed": False,
         "study_date": "2025-01-15"
     },
     {
@@ -43,7 +43,7 @@ mock_studies = [
         ],
         "max_participants": 5,
         "confirmed_candidate": ["user004", "user005"],
-        "rejected_candidate": [],
+        "isClosed": False,
         "study_date": "2025-01-20"
     },
     {
@@ -59,7 +59,7 @@ mock_studies = [
         ],
         "max_participants": 8,
         "confirmed_candidate": ["4426666879", "4426666879", "user003"],
-        "rejected_candidate": [],
+        "isClosed": False,
         "study_date": "2025-01-12"
     },
     {
@@ -73,7 +73,7 @@ mock_studies = [
         ],
         "max_participants": 6,
         "confirmed_candidate": [],
-        "rejected_candidate": [],
+        "isClosed": True,
         "study_date": "2025-01-25"
     }
 ]

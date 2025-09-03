@@ -5,7 +5,7 @@
     event.preventDefault();
 
     try {
-      const res = await fetch(`/study/${studyId}`, {
+      const res = await fetch(`/study/${studyId}${window.location.search}`, {
         headers: {
           "X-Requested-With": "XMLHttpRequest",
         },

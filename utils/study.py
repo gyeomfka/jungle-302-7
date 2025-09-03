@@ -14,24 +14,27 @@ def get_studies_by_tab(user_id, tab):
             studies = list(db.study.find({"host_id": user_id}))
         elif tab == "applied":
             # 지원한 스터디
-            # (confirmed_candidate, rejected_candidate, candidate의 user_id에 포함)
+            # (confirmed_candidate, candidate의 user_id에 포함)
             studies = list(
                 db.study.find(
                     {
                         "$or": [
                             {"confirmed_candidate": user_id},
-                            {"rejected_candidate": user_id},
                             {
                                 "candidate.user_id": user_id
                             },
-                            # TODO: user_id가 리스트인데 잘 가지고 오는지 확인 필요
                         ]
                     }
                 )
             )
+            
+            # 각 스터디에 대한 지원 상태 정보 추가
+            for study in studies:
+                study['application_status'] = get_application_status(study, user_id)
         else:
             studies = []
 
+        print(studies)
         return studies
 
     except Exception as e:
@@ -74,9 +77,9 @@ def apply_to_study(study_id, user_id, selected_dates):
         if user_id in study.get("confirmed_candidate", []):
             return False, "이미 확정된 참여자입니다."
 
-        # 거절된 참여자인지 확인
-        if user_id in study.get("rejected_candidate", []):
-            return False, "참여가 거절된 스터디입니다."
+        # 마감된 스터디인지 확인
+        if study.get('isClosed'):
+            return False, "스터디가 이미 마감되었습니다."
 
         # 선택된 날짜들에 사용자 ID 추가
         for selected_date in selected_dates:
@@ -170,3 +173,30 @@ def get_user_profile(user_id):
     except Exception as e:
         print(f"사용자 프로필 조회 오류: {e}")
         return None
+
+
+def get_application_status(study, user_id):
+    """스터디에 대한 사용자의 지원 상태를 반환합니다."""
+    # print(study)
+    try:
+        # 확정 참여자인 경우
+        if user_id in study.get("confirmed_candidate", []):
+            return "confirmed"  # 참여
+        
+        # 스터디가 마감된 경우
+        if study.get("isClosed", False):
+            return "closed"  # 다음 기회에
+            
+        # 지원했지만 아직 대기중인 경우
+        for candidate in study.get("candidate", []):
+            print(candidate.get("user_id", []))
+            print(user_id)
+            print(user_id in candidate.get("user_id", []))
+            if user_id in candidate.get("user_id", []):
+                return "pending"  # 대기중
+                
+        return "not_applied"  # 지원하지 않음
+        
+    except Exception as e:
+        print(f"지원 상태 확인 오류: {e}")
+        return "unknown"
