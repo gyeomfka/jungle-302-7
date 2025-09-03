@@ -1,0 +1,204 @@
+<!-- templates/room.html -->
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Room {{ room_id }}</title>
+    <link rel="shortcut icon" href="#" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <div id="videos" class="header video-box">
+      <div class="video-wrapper flex-auto">
+        <video
+          id="localVideo"
+          autoplay
+          playsinline
+          muted
+          class="rounded-lg bg-black video-custom"
+        ></video>
+      </div>
+    </div>
+    <div class="chat-icon" id="chat-icon">💬</div>
+    <div class="chat-box" id="chat-box">
+      <div class="messages" id="messages"></div>
+      <div class="inputs">
+        <input
+          type="text"
+          rows="3"
+          placeholder="메세지"
+          name="message"
+          id="message"
+        />
+        <button type="button" name="send" id="send-btn" onclick="sendMessage()">
+          보내기
+        </button>
+      </div>
+    </div>
+    <h2 class="headCustom">방 아이디: {{ room_id }} // {{username}}</h2>
+    <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+    <script>
+      const socketio = io();
+      const room = "{{ room_id }}";
+      const peers = {};
+      const videoContainer = document.getElementById("videos");
+      // var screenSharing = false;
+      const shareBtn = document.getElementById("share-btn");
+      let localStream;
+
+      async function start() {
+        // 기본 자바스크립트 함수 -- 카메라와 마이크 스트림을 활성화
+        localStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+
+        // 로컬 비디오 요소에만 현재 스트림 표시
+        document.getElementById("localVideo").srcObject = localStream;
+
+        // 소켓을 통해 로컬 사용자의 정보 전달- app.py / @socketio.on("join")로 이동
+        socketio.emit("join", { room });
+      }
+      start();
+
+      // 다른 유저들한테 새로운 userId로 RTC 생성
+      socketio.on("user-joined", async ({ userId }) => {
+        // 새로운 RTCConnection 생성
+        const peer = createPeer(userId);
+
+        // peer 레퍼렌스용 함수 --
+        peers[userId] = peer;
+
+        // WebRTC 생성 -  Peer 서로간의 미디어와 네트워크에 관한 정보를 이해하기 위해 사용 -- session ID, session version 등등 포함
+        const offer = await peer.createOffer();
+
+        // 원격 피어에게 전송할 로컬 설명 설정 - 미디어포맷 ** / promise 함수
+        await peer.setLocalDescription(offer);
+
+        // app.py - @socketio.on("signal")로 이동
+        socketio.emit("signal", { room, offer, to: userId });
+      });
+
+      socketio.on("signal", async (data) => {
+        const { from, offer, answer, candidate } = data;
+        if (!peers[from]) {
+          peers[from] = createPeer(from);
+        }
+        const peer = peers[from];
+
+        // 다른 사용자로부터 새 연결 요청(offer) 수신, 답장 발신
+        if (offer) {
+          await peer.setRemoteDescription(new RTCSessionDescription(offer));
+          const answerDesc = await peer.createAnswer();
+          await peer.setLocalDescription(answerDesc);
+          socketio.emit("signal", { room, answer: answerDesc, to: from });
+          // 다른 사용자에게서 연결 응답(answer) 수신
+        } else if (answer) {
+          await peer.setRemoteDescription(new RTCSessionDescription(answer));
+          // 다른 사용자에게서 ICE 후보(candidate) 수신
+        } else if (candidate) {
+          await peer.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+      });
+
+      function createPeer(userId) {
+        const peer = new RTCPeerConnection();
+
+        // 미디어 파일을 다른 유저로 발신
+        localStream
+          .getTracks()
+          .forEach((track) => peer.addTrack(track, localStream));
+
+        // 다른 사용자에게서 미디어 파일 수신
+        peer.ontrack = (event) => {
+          let container = document.getElementById("container-" + userId);
+          if (!container) {
+            container = document.createElement("div");
+            container.id = "container-" + userId;
+            container.className = "video-wrapper flex-auto video-custom"; // responsive width
+            const video = document.createElement("video");
+            video.id = "video-" + userId;
+            video.autoplay = true;
+            video.playsinline = true;
+            video.srcObject = event.streams[0];
+            video.className = "w-full h-auto rounded-lg bg-black";
+            container.appendChild(video);
+            videoContainer.appendChild(container);
+          }
+        };
+
+        peer.onicecandidate = (event) => {
+          if (event.candidate) {
+            socketio.emit("signal", {
+              room,
+              candidate: event.candidate,
+              to: userId,
+            });
+          }
+        };
+
+        return peer;
+      }
+
+      socketio.on("user-left", ({ userId }) => {
+        deletePeerVideo(userId);
+      });
+
+      function deletePeerVideo(userId) {
+        const video = document.getElementById("video-" + userId);
+
+        // DOM에서 잔여 비디오 요소가 존재하면 제거
+        if (video) {
+          video.srcObject = null; // 화면공유 종료
+          video.remove(); // 비디오 삭제
+          peers[userId].close(); // peer 연결 삭제
+          delete peers[userId]; // peer 레퍼런스 삭제
+        }
+      }
+
+      // // 메세지 보내기
+      const messages = document.getElementById("messages");
+
+      const createMessage = (name, msg) => {
+        const content = `
+                <div class="text" style="margin-bottom: 8px">
+                  <span class="muted" style="font-size: 0.8em; display: block; margin-bottom: 2px;">
+                      ${new Date().toLocaleString()}
+                  </span>
+                  <span>
+                      <strong>${name}</strong>: ${msg}
+                  </span>
+              </div>
+            `;
+        messages.innerHTML += content;
+      };
+
+      socketio.on("message", (data) => {
+        createMessage(data.name, data.message);
+      });
+
+      const sendMessage = () => {
+        const message = document.getElementById("message");
+        if (message.value == "") return;
+        socketio.emit("message", { data: message.value });
+        message.value = "";
+      };
+
+      const chatIcon = document.getElementById("chat-icon");
+      const chatBox = document.getElementById("chat-box");
+
+      chatIcon.addEventListener("click", () => {
+        chatBox.style.display =
+          chatBox.style.display === "flex" ? "none" : "flex";
+        chatBox.style.flexDirection = "column";
+      });
+
+      socketio.on("duplicate_login", () => {
+        alert("중복 로그인으로 접속이 종료됩니다.");
+        window.location.href = "/error";
+      });
+    </script>
+  </body>
+</html>
