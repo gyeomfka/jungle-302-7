@@ -70,23 +70,16 @@ def kakao_callback():
 @token_required
 def study():
     tab = request.args.get("tab", "all")  # 기본값: 전체 스터디
-    search_keyword = request.args.get("searchKeyword", "")
-    category = request.args.get("category")
-    
-    is_closed = request.args.get("isClosed")
-    context={}
-    if is_closed is not None:
-        context["is_closed"] = is_closed
 
     # 유효한 탭인지 확인
     if tab not in ["all", "my", "applied"]:
         tab = "all"
-        
-    # 탭에 따라 스터디 데이터 조회
-    studies = get_studies_by_tab(request.current_user_id, tab, search_keyword, category, is_closed) 
 
-    return render_template('study.html', studies=studies, tab=tab, search_keyword=search_keyword, category=category, **context)
-    # return render_template('study.html', studies=studies, tab=tab, search_keyword=search_keyword, category=category, is_closed=is_closed)
+    # 탭에 따라 스터디 데이터 조회
+    studies = get_studies_by_tab(request.current_user_id, tab) 
+
+    return render_template('study.html', studies=studies, tab=tab)
+
 
 @app.route("/study/create", methods=['GET'])
 @token_required
