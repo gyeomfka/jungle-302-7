@@ -12,7 +12,9 @@ p-4{% endblock %} {% block content %}
     class="space-y-6"
   >
     <!-- 관심사 섹션 -->
-    {{ tag_buttons() }}
+    {{ tag_buttons([ "알고리즘", "C언어", "자료구조", "PintOS", "웹서버",
+    "메모리 구조", "네트워크", "파이썬", "CS" ],
+    user_profile.interest_of_subject) }}
 
     <!-- 자기소개 -->
     <div>
@@ -27,7 +29,9 @@ p-4{% endblock %} {% block content %}
         rows="4"
         placeholder="자기소개를 작성해주세요."
         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-      ></textarea>
+      >
+{{user_profile.description}}</textarea
+      >
     </div>
 
     <!-- 완료 버튼 -->
@@ -63,3 +67,5 @@ p-4{% endblock %} {% block content %}
   {% endif %}
 </script>
 {% endblock %}
+
+<!-- TODO: 태그 선택 기본 값 제공 -->

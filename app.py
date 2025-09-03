@@ -16,6 +16,7 @@ from utils.auth import (
     handle_kakao_callback,
     handle_logout,
     update_user_profile,
+    delete_user_account,
 )
 from utils.study import (
     apply_to_study,
@@ -243,7 +244,9 @@ def user_profile_api(user_id):
 @app.route("/profile")
 @token_required
 def profile():
-    return render_template("profile.html")
+    # 현재 사용자 프로필 정보 가져오기
+    user_profile = get_user_profile(request.current_user_id)
+    return render_template("profile.html", user_profile=user_profile)
 
 
 @app.route("/profile/update", methods=["POST"])
@@ -267,6 +270,21 @@ def profile_update():
 @app.route('/logout')
 def logout():
     return handle_logout()
+
+
+@app.route("/user/delete-account", methods=["POST"])
+@token_required
+def delete_account():
+    """회원탈퇴 - 사용자 데이터 및 관련 스터디 삭제"""
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+    
+    success, message = delete_user_account(request.current_user_id)
+    
+    if success:
+        return make_response(message, 200)
+    else:
+        return make_response(message, 500)
 
 
 @app.route("/test")
