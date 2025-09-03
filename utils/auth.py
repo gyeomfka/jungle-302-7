@@ -211,4 +211,28 @@ def handle_logout():
     response.set_cookie('refresh_token', '', expires=0)
     request.current_user_id = None
     return response
+
+def update_user_profile(user_id, interests, description):
+    try:
+        db = get_db()
+        
+        # 관심사를 리스트로 변환
+        interest_list = [interest.strip() for interest in interests.split(',') if interest.strip()]
+        
+        # 사용자 프로필 업데이트
+        update_data = {
+            'interest_of_subject': interest_list,
+            'description': description,
+        }
+        
+        result = db.user.update_one(
+            {'id': user_id},
+            {'$set': update_data}
+        )
+        
+        return result.modified_count > 0
+        
+    except Exception as e:
+        print(f"프로필 업데이트 오류: {e}")
+        return False
    

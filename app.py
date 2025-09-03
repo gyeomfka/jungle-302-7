@@ -2,7 +2,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for
 import urllib.parse
 from db import get_db
 from config import get_config
-from utils.auth import token_required, handle_kakao_callback, handle_logout
+from utils.auth import token_required, handle_kakao_callback, handle_logout, update_user_profile
 
 app = Flask(__name__)
 cfg = get_config()
@@ -45,11 +45,25 @@ def study():
 @app.route('/profile')
 @token_required
 def profile():
-   return jsonify({
-       'message': 'profile!',
-       'user_id': request.current_user_id
-   })
+   return render_template('profile.html')
 
+@app.route('/profile/update', methods=['POST'])
+@token_required
+def profile_update():
+   interests = request.form.get('interests', '')
+   description = request.form.get('description', '')
+   
+   success = update_user_profile(
+      request.current_user_id,
+      interests,
+      description
+   )
+   
+   if success:
+      return redirect(url_for('study'))
+   else:
+      return render_template('profile.html', error="프로필 업데이트에 실패했습니다. 다시 시도해주세요.")
+      
 @app.route('/logout')
 def logout():
    return handle_logout()
@@ -64,5 +78,3 @@ def test():
 if __name__ == '__main__':  
    app.run('0.0.0.0',port=5001,debug=True)
 
-
-# TODO: 회원가입 후 관심사 설정

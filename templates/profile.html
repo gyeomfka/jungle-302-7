@@ -1,0 +1,66 @@
+{% extends "base.html" %} {% from "components/tag_buttons.html" import
+tag_buttons, tag_button_script %} {% block title %}My Profile{% endblock %} {%
+block body_class %}bg-gray-200 min-h-screen flex items-center justify-center
+p-4{% endblock %} {% block content %}
+<div class="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
+  <h1 class="text-xl font-bold text-center text-gray-800 mb-6">My Profile</h1>
+
+  <form
+    id="profileForm"
+    method="POST"
+    action="/profile/update"
+    class="space-y-6"
+  >
+    <!-- 관심사 섹션 -->
+    {{ tag_buttons([ "알고리즘", "C언어", "자료구조", "PintOS", "웹서버",
+    "메모리 구조", "네트워크", "파이썬", "CS" ]) }}
+
+    <!-- 자기소개 -->
+    <div>
+      <label
+        for="description"
+        class="block text-sm font-medium text-gray-700 mb-2"
+        >자기소개</label
+      >
+      <textarea
+        name="description"
+        id="description"
+        rows="4"
+        placeholder="자기소개를 작성해주세요."
+        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+      ></textarea>
+    </div>
+
+    <!-- 완료 버튼 -->
+    <button
+      type="submit"
+      class="w-full bg-gray-800 text-white py-2 px-4 rounded-md hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+    >
+      완료
+    </button>
+  </form>
+</div>
+{% endblock %} {% block scripts %} {{ tag_button_script() }}
+
+<script>
+  // 폼 제출 처리
+  document.getElementById('profileForm').addEventListener('submit', function(e) {
+      if (getSelectedInterests().length === 0) {
+          e.preventDefault();
+          alert('관심사를 최소 하나 이상 선택해주세요.');
+          return;
+      }
+
+      if (!document.getElementById('description').value.trim()) {
+          e.preventDefault();
+          alert('자기소개를 입력해주세요.');
+          return;
+      }
+  });
+
+  // 서버 에러 처리
+  {% if error %}
+      alert('{{ error }}');
+  {% endif %}
+</script>
+{% endblock %}
