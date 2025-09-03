@@ -64,6 +64,34 @@ def profile_update():
    else:
       return render_template('profile.html', error="프로필 업데이트에 실패했습니다. 다시 시도해주세요.")
       
+@app.route('/create_study', methods=['GET'])
+def create_study_form():
+   return render_template('create_study.html')
+
+@app.route('/create_study', methods=['POST'])
+def create_study():
+   db = get_db()
+   data = request.get_json()
+   
+   name = data.get("studyName")
+   host_id = "test_user"
+   description = data.get("studyIntro")
+   category = data.get("category")
+   max_participants = data.get("maxParticipants")
+   candidate = [item['selectedDate'] for item in data['expectedDateList']]
+
+   study = {
+      "name": name,
+      "host_id": host_id,
+      "description": description,
+      "category": category,
+      "max_participants": max_participants,
+      "candidate": candidate
+   }
+
+   db.study.insert_one(study)
+   return jsonify({'result': 'success'})
+
 @app.route('/logout')
 def logout():
    return handle_logout()
