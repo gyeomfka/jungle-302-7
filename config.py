@@ -10,7 +10,12 @@ class BaseConfig:
     MONGO_PASSWORD = os.environ.get("MONGO_PASSWORD")
     # authSource는 보통 admin
     MONGO_AUTH_SOURCE = os.environ.get("MONGO_AUTH_SOURCE")
-
+    
+    # 카카오 OAuth
+    KAKAO_CLIENT_ID = os.environ.get("KAKAO_CLIENT_ID")
+    KAKAO_CLIENT_SECRET = os.environ.get("KAKAO_CLIENT_SECRET")
+    KAKAO_REDIRECT_URI = os.environ.get("KAKAO_REDIRECT_URI")
+    
 class DevConfig(BaseConfig):
     """개발: AWS EC2의 원격 MongoDB로 접속"""
     # 예) EC2 퍼블릭 IP 또는 도메인
