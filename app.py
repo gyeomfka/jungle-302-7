@@ -212,8 +212,6 @@ def confirm_candidates(study_id):
         return make_response("잘못된 요청입니다.", 400)
 
     try:
-        print('---------------------------')
-        print(study_id)
         data = request.get_json()
         confirmed_candidates = data.get("confirmed_candidates", [])
         study_date = data.get("study_date")
