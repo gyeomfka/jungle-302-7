@@ -1,0 +1,36 @@
+<div class="text-center py-12">
+  <div class="text-gray-400 mb-4">
+    <svg
+      width="64"
+      height="64"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1"
+      class="mx-auto"
+    >
+      <path
+        d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.29 1.51 4.04 3 5.5Z"
+      />
+    </svg>
+  </div>
+  <h3 class="text-lg font-medium text-gray-900 mb-2">
+    {% if tab == 'my' %} 아직 만든 스터디가 없습니다 {% elif tab == 'applied' %}
+    아직 지원한 스터디가 없습니다 {% else %} 등록된 스터디가 없습니다 {% endif
+    %}
+  </h3>
+  <p class="text-gray-500 mb-6">
+    {% if tab == 'my' %} 새로운 스터디를 만들어보세요! {% elif tab == 'applied'
+    %} 관심있는 스터디에 지원해보세요! {% else %} 첫 번째 스터디를 만들어보세요!
+    {% endif %}
+  </p>
+  {% if tab != 'applied' %}
+  <button
+    type="button"
+    onclick="location.href='/study/create'"
+    class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg"
+  >
+    스터디 만들기
+  </button>
+  {% endif %}
+</div>

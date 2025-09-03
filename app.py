@@ -1,8 +1,9 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for
+from flask import Flask, render_template, jsonify, request, redirect, url_for, make_response
 import urllib.parse
 from db import get_db
 from config import get_config
 from utils.auth import token_required, handle_kakao_callback, handle_logout, update_user_profile
+from utils.study import get_studies_by_tab
 
 app = Flask(__name__)
 cfg = get_config()
@@ -36,11 +37,29 @@ def kakao_callback():
 @app.route('/study')
 @token_required
 def study():
-   # 스터디 목록
-   return jsonify({
-       'message': '로그인 성공!',
-       'user_id': request.current_user_id
-   })
+   tab = request.args.get('tab', 'all')  # 기본값: 전체 스터디
+   
+   # 유효한 탭인지 확인
+   if tab not in ['all', 'my', 'applied']:
+       tab = 'all'
+   
+   # 탭에 따라 스터디 데이터 조회
+   studies = get_studies_by_tab(request.current_user_id, tab)
+   
+   return render_template('study.html', studies=studies, tab=tab)
+
+@app.route('/study/create')
+@token_required
+def study_create():
+   return render_template('study_create.html')
+
+@app.route('/study/<string:study_id>')
+@token_required
+def study_detail(study_id):
+   html =  render_template('components/study/study_detail_fragment.html', item={study_id: study_id})
+   response = make_response(html, 200)
+   response.headers["Content-Type"] = "text/html; charset=utf-8"
+   return response
 
 @app.route('/profile')
 @token_required

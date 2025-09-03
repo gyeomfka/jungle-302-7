@@ -1,0 +1,72 @@
+{% extends "base.html" %} {% block title %}스터디{% endblock %} {% block scripts
+%}
+<script>
+  async function loadStudyDetail(studyId, event) {
+    event.preventDefault();
+    try {
+      const res = await fetch(`/study/${studyId}`, {
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+
+      if (res.ok) {
+        const html = await res.text();
+        document.getElementById("study_detail").innerHTML = html;
+        console.log(html);
+      }
+    } catch (error) {
+      console.error("스터디 상세 정보를 불러오는데 실패했습니다:", error);
+    }
+  }
+</script>
+{% endblock %} {% block content %}
+
+<div class="min-h-screen bg-gray-100">
+  <!-- 헤더 -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="max-w-6xl mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <!-- 탭 메뉴 -->
+        <div class="flex space-x-6">
+          <a
+            href="/study?tab=all"
+            class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'all' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+          >
+            전체 스터디
+          </a>
+          <a
+            href="/study?tab=my"
+            class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'my' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+          >
+            나의 스터디
+          </a>
+          <a
+            href="/study?tab=applied"
+            class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'applied' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+          >
+            지원한 스터디
+          </a>
+        </div>
+
+        <button
+          type="button"
+          onclick="location.href='/study/create'"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+        >
+          스터디 만들기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 메인 콘텐츠 -->
+  <div class="flex">
+    <div class="max-w-6xl mx-auto px-4 py-6 flex-1">
+      {% if studies %} {% include "components/study/study_list.html" %} {% else
+      %} {% include "components/study/empty_state.html" %} {% endif %}
+    </div>
+    <section id="study_detail"></section>
+  </div>
+</div>
+{% endblock %}

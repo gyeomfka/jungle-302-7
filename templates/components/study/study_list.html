@@ -1,0 +1,60 @@
+<div class="grid gap-4 md:gap-6">
+  {% for study in studies %}
+  <a
+    class="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow cursor-pointer"
+    href="/study/{{ study.id }}"
+    onclick="loadStudyDetail('{{ study.id }}', event)"
+  >
+    <div class="flex-1">
+      <div class="flex items-center space-x-3 mb-3">
+        <h3 class="text-lg font-semibold text-gray-900">{{ study.name }}</h3>
+        <span class="bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded-full"
+          >{{ study.subject }}</span
+        >
+      </div>
+
+      <p class="text-gray-600 text-sm mb-4 line-clamp-2">
+        {{ study.description }}
+      </p>
+
+      <div class="flex items-center space-x-4 text-sm text-gray-500">
+        <div class="flex items-center space-x-1">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path
+              d="m22 21-3-3m0 0a5.5 5.5 0 1 0-7.8-7.8 5.5 5.5 0 0 0 7.8 7.8Z"
+            />
+          </svg>
+          <span>최대 {{ study.max_participants }}명</span>
+        </div>
+        {% if study.study_date %}
+        <div class="flex items-center space-x-1">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span>{{ study.study_date }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </a>
+  {% endfor %}
+</div>
