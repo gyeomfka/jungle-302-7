@@ -2,40 +2,49 @@ from db import get_db
 from utils.video_chat import create_study_confirmation_notification
 
 
-def get_studies_by_tab(user_id, tab):
+def get_studies_by_tab(user_id, tab, search_keyword=None, category=None, is_closed=None):
     """탭에 따라 스터디 데이터를 조회합니다."""
     try:
         db = get_db()
+        query = {}
 
         if tab == "all":
             # 전체 스터디
-            studies = list(db.study.find({}))
+            query = {}
         elif tab == "my":
             # 나의 스터디 (host_id가 현재 사용자)
-            studies = list(db.study.find({"host_id": user_id}))
+            query = {"host_id": user_id}
         elif tab == "applied":
             # 지원한 스터디
             # (confirmed_candidate, candidate의 user_id에 포함)
-            studies = list(
-                db.study.find(
-                    {
-                        "$or": [
-                            {"confirmed_candidate": user_id},
-                            {
-                                "candidate.user_id": user_id
-                            },
-                        ]
-                    }
-                )
-            )
-            
-            # 각 스터디에 대한 지원 상태 정보 추가
-            for study in studies:
-                study['application_status'] = get_application_status(study, user_id)
-        else:
-            studies = []
+            query = {
+                "$or": [
+                    {"confirmed_candidate": user_id},
+                    {"candidate.user_id": user_id},
+                ]
+            }
 
-        print(studies)
+        if search_keyword:
+            # 예: name, description 필드에서 검색
+            query["$or"] = query.get("$or", []) + [
+                {"name": {"$regex": search_keyword, "$options": "i"}},
+                {"description": {"$regex": search_keyword, "$options": "i"}},
+            ]
+            
+        if category:
+            query["subject"] = category
+
+        if is_closed:
+            query["is_closed"] = is_closed
+
+        print(query)
+
+        studies = list(db.study.find(query))
+
+        # 각 스터디에 대한 지원 상태 정보 추가
+        for study in studies:
+            study['application_status'] = get_application_status(study, user_id)
+
         return studies
 
     except Exception as e:

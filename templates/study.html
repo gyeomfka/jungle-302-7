@@ -1,149 +1,265 @@
-{% extends "authenticated_base.html" %} {% block title %}스터디{% endblock %} {%
-block nav_tabs %}
-<div class="flex space-x-6">
-  <a
-    href="/study?tab=all"
-    class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'all' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
-  >
-    전체 스터디
-  </a>
-  <a
-    href="/study?tab=my"
-    class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'my' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
-  >
-    나의 스터디
-  </a>
-  <a
-    href="/study?tab=applied"
-    class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'applied' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
-  >
-    지원한 스터디
-  </a>
-</div>
-{% endblock %} {% block main_content %}
-<!-- 메인 콘텐츠 -->
-<div class="flex mx-auto px-4 py-6 gap-4" id="study_wrapper">
-  <div class="max-w-6xl flex-1">
-    {% if studies %} {% include "components/study/study_list.html" %} {% else %}
-    {% include "components/study/empty_state.html" %} {% endif %}
-  </div>
-  <!-- 스터디 상세보기 생성 위치 -->
-</div>
-{% endblock %} {% block scripts %}
-<script>
-  async function loadStudyDetail(studyId, event) {
-    event.preventDefault();
-
-    try {
-      const res = await fetch(`/study/${studyId}${window.location.search}`, {
-        headers: {
-          "X-Requested-With": "XMLHttpRequest",
-        },
-      });
-
-      if (res.ok) {
-        const html = await res.text();
-        const parser = new DOMParser();
-        const studyDetail = parser.parseFromString(html, "text/html").body
-          .firstElementChild;
-        const prev = document.getElementById("study_detail");
-        if (prev) prev.replaceWith(studyDetail);
-        else document.getElementById("study_wrapper").append(studyDetail);
-      }
-    } catch (error) {
-      console.error("스터디 상세 정보를 불러오는데 실패했습니다:", error);
-    }
-  }
-
-  function closeDetail() {
-    const studyDetail = document.getElementById("study_detail");
-    if (studyDetail) {
-      studyDetail.remove();
-    }
-  }
-  async function applyToStudy(studyId) {
-    const selectedDates = [];
-    const checkboxes = document.querySelectorAll(
-      ' input[name="selected_dates" ]:checked'
-    );
-    checkboxes.forEach((checkbox) => {
-      selectedDates.push(checkbox.value);
+{% extends "base.html" %} {% block title %}스터디{% endblock %} {% block scripts
+  %}
+  <script>
+    const tab = "{{ tab }}";
+    let isClosed = "{{ is_closed }}";
+  
+    document.addEventListener("DOMContentLoaded", function () {
+        // Flask에서 넘겨받은 category 값
+        const selectedCategory = "{{ category|default('', true) }}";  
+        const selectElement = document.getElementById("category");
+  
+        if (selectedCategory) {
+          selectElement.value = selectedCategory;
+        }
+  
+        const btn = document.getElementById("searchToggle");
+        btn.classList.toggle("bg-blue-500", isClosed);
+        btn.classList.toggle("bg-white", !isClosed);
+  
+        btn.classList.toggle("text-white", isClosed);
+        btn.classList.toggle("text-gray-700", !isClosed);
+  
+        btn.classList.toggle("border-blue-600", isClosed);
+        btn.classList.toggle("border-gray-300", !isClosed);
     });
-    if (selectedDates.length === 0) {
-      alert("참여하고 싶은 날짜를 선택해주세요.");
-      return;
+  
+    function searchToggle() {
+      isClosed = !isClosed;
+      searchCondition(tab)
     }
-    try {
-      const response = await fetch(`/study/${studyId}/apply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-        },
-        body: JSON.stringify({ selected_dates: selectedDates }),
-      });
-      if (response.ok) {
-        alert("스터디 참여 신청이 완료되었습니다!");
-        closeDetail();
-      } else {
-        const errorText = await response.text();
-        alert(`신청 실패: ${errorText}`);
+  
+    async function loadStudyDetail(studyId, event) {
+      event.preventDefault();
+  
+      try {
+        const res = await fetch(`/study/${studyId}${window.location.search}`, {
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        });
+  
+        if (res.ok) {
+          const html = await res.text();
+          const parser = new DOMParser();
+          const studyDetail = parser.parseFromString(html, "text/html").body
+            .firstElementChild;
+          const prev = document.getElementById("study_detail");
+          if (prev) prev.replaceWith(studyDetail);
+          else document.getElementById("study_wrapper").append(studyDetail);
+        }
+      } catch (error) {
+        console.error("스터디 상세 정보를 불러오는데 실패했습니다:", error);
       }
-    } catch (error) {
-      console.error("스터디 신청 오류:", error);
-      alert("신청 중 오류가 발생했습니다. 다시 시도해주세요.");
     }
-  }
-</script>
-{% endblock %} {% block content %}
-
-<div class="min-h-screen bg-gray-100">
-  <!-- 헤더 -->
-  <div class="bg-white shadow-sm border-b">
-    <div class="max-w-6xl mx-auto px-4 py-4">
-      <div class="flex justify-between items-center">
-        <!-- 탭 메뉴 -->
-        <div class="flex space-x-6">
-          <a
-            href="/study?tab=all"
-            class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'all' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+  
+    function closeDetail() {
+      const studyDetail = document.getElementById("study_detail");
+      if (studyDetail) {
+        studyDetail.remove();
+      }
+    }
+  
+    async function applyToStudy(studyId) {
+      const selectedDates = [];
+      const checkboxes = document.querySelectorAll(
+        ' input[name="selected_dates" ]:checked'
+      );
+      checkboxes.forEach((checkbox) => {
+        selectedDates.push(checkbox.value);
+      });
+      if (selectedDates.length === 0) {
+        alert("참여하고 싶은 날짜를 선택해주세요.");
+        return;
+      }
+      try {
+        const response = await fetch(`/study/${studyId}/apply`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify({ selected_dates: selectedDates }),
+        });
+        if (response.ok) {
+          alert("스터디 참여 신청이 완료되었습니다!");
+          closeDetail();
+        } else {
+          const errorText = await response.text();
+          alert(`신청 실패: ${errorText}`);
+        }
+      } catch (error) {
+        console.error("스터디 신청 오류:", error);
+        alert("신청 중 오류가 발생했습니다. 다시 시도해주세요.");
+      }
+    }
+  
+    function searchCondition(tabKind) {
+      let searchKeyword = document.getElementById('searchKeyword').value;
+      let category = document.getElementById('category').value;
+  
+      let url = `/study?tab=${tabKind}`;
+  
+      if (searchKeyword && searchKeyword.trim() !== '') {
+        url += `&searchKeyword=${encodeURIComponent(searchKeyword.trim())}`
+      }
+  
+      if (category && category.trim() !== '') {
+        url += `&category=${encodeURIComponent(category.trim())}`
+      }
+  
+      if (isClosed) {
+        url += `&isClosed=${!isClosed}`;
+      }
+  
+      window.location.href = url;
+    }
+  
+    
+  </script>
+  {% endblock %} {% block content %}
+  
+  <div class="min-h-screen bg-gray-100">
+    <!-- 헤더 -->
+    <div class="bg-white shadow-sm border-b">
+      <div class="max-w-6xl mx-auto px-4 py-4">
+        <div class="flex justify-between items-center">
+          <!-- 탭 메뉴 -->
+          <div class="flex space-x-6">
+            <a
+              onclick="searchCondition('all')"
+              class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'all' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+            >
+              전체 스터디
+            </a>
+  
+            <a
+              onclick="searchCondition('my')"
+              class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'my' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+            >
+              나의 스터디
+            </a>
+  
+            <a
+              onclick="searchCondition('applied')"
+              class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'applied' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
+            >
+              지원한 스터디
+            </a>
+          </div>
+  
+          <button
+            type="button"
+            onclick="location.href='/study/create'"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
           >
-            전체 스터디
-          </a>
-          <a
-            href="/study?tab=my"
-            class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'my' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
-          >
-            나의 스터디
-          </a>
-          <a
-            href="/study?tab=applied"
-            class="pb-2 border-b-2 {{ 'border-blue-500 text-blue-600' if tab == 'applied' else 'border-transparent text-gray-500 hover:text-gray-700' }}"
-          >
-            지원한 스터디
-          </a>
+            스터디 만들기
+          </button>
         </div>
-
-        <button
-          type="button"
-          onclick="location.href='/study/create'"
-          class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
-        >
-          스터디 만들기
-        </button>
       </div>
     </div>
-  </div>
-
-  <!-- 메인 콘텐츠 -->
-  <div class="flex mx-auto px-4 py-6 gap-4" id="study_wrapper">
-    <div class="max-w-6xl flex-1">
-      {% if studies %} {% include "components/study/study_list.html" %} {% else
-      %} {% include "components/study/empty_state.html" %} {% endif %}
+  
+    <!-- 검색창 -->
+    <div class="bg-gray p-6 rounded-lg border border-gray-200">
+      <div class="flex flex-col sm:flex-row gap-4 max-w-2xl">
+          <div class="relative flex-1">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i class="fas fa-search text-gray-400"></i>
+              </div>
+              <input 
+                  type="text" 
+                  id="searchKeyword"
+                  name="searchKeyword"
+                  class="block w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm transition-all duration-200"
+                  placeholder="스터디 검색"
+                  value="{{ search_keyword }}"
+              >
+          </div>
+          
+          <select 
+            class="px-4 py-3 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+            id="category"
+            name="category"
+          >
+              <option value="">전체</option>
+              <option value="al">알고리즘</option>
+              <option value="os">OS</option>
+              <option value="ws">웹서버</option>
+              <option value="nw">네트워크</option>
+          </select>
+          
+          <button onclick="searchCondition(tab)">
+            <svg class="w-5 h-5 text-gray-400 mt-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+            </svg>
+          </button>
+          
+          <!-- bg-blue-500 -->
+          <button
+            id="searchToggle"
+            type="button"
+            class="tag-btn px-3 py-1 rounded-full text-sm font-medium border transition-colors bg-white text-gray-700 border-gray-300"
+            onclick="searchToggle()"
+          >모집중</button>
+      </div>
     </div>
-    <!-- 스터디 상세보기 생성 위치 -->
+  
+    <!-- 메인 콘텐츠 -->
+    <div class="flex mx-auto px-4 py-6 gap-4" id="study_wrapper">
+      <div class="max-w-6xl flex-1">
+        {% if studies %} {% include "components/study/study_list.html" %} {% else
+        %} {% include "components/study/empty_state.html" %} {% endif %}
+      </div>
+      <!-- 스터디 상세보기 생성 위치 -->
+    </div>
   </div>
-</div>
-{% endblock %}
-
-<!-- TODO: 무한 스크롤 구현 -->
+  
+  <nav class="flex items-center justify-center mt-1 mb-6" aria-label="Pagination">
+    <ul class="inline-flex items-stretch gap-1">
+      <!-- Prev -->
+      <li>
+        <a href="#"
+           class="inline-flex items-center gap-2 px-3 h-9 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
+           aria-label="Previous page">
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M12.78 15.53a.75.75 0 01-1.06 0l-4.25-4.25a.75.75 0 010-1.06l4.25-4.25a.75.75 0 111.06 1.06L8.81 10l3.97 3.97a.75.75 0 010 1.06z" clip-rule="evenodd"/>
+          </svg>
+          <span class="hidden sm:inline">이전</span>
+        </a>
+      </li>
+  
+      <!-- Page items -->
+      <li>
+        <a href="#"
+           class="inline-flex items-center justify-center min-w-9 h-9 px-3 rounded-lg border border-transparent bg-blue-600 text-white font-medium"
+           aria-current="page">1</a>
+      </li>
+      <li>
+        <a href="#"
+           class="inline-flex items-center justify-center min-w-9 h-9 px-3 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">2</a>
+      </li>
+     
+      <li class="hidden sm:list-item">
+        <a href="#"
+           class="inline-flex items-center justify-center min-w-9 h-9 px-3 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">3</a>
+      </li>
+      <!-- Next -->
+      <li>
+        <a href="#"
+           class="inline-flex items-center gap-2 px-3 h-9 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none"
+           aria-label="Next page">
+          <span class="hidden sm:inline">다음</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M7.22 4.47a.75.75 0 011.06 0l4.25 4.25c.3.3.3.77 0 1.06l-4.25 4.25a.75.75 0 11-1.06-1.06L11.19 10 7.22 6.03a.75.75 0 010-1.06z" clip-rule="evenodd"/>
+          </svg>
+        </a>
+      </li>
+    </ul>
+  </nav>
+  
+  {% endblock %}
+  
+  
+  
+  <!-- TODO: 무한 스크롤 구현 -->
+  
