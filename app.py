@@ -74,12 +74,6 @@ def study():
     return render_template('study.html', studies=studies, tab=tab)
 
 
-@app.route("/study/create")
-@token_required
-def study_create():
-    return render_template("study_create.html")
-
-
 @app.route("/study/<string:study_id>")
 @token_required
 def study_detail(study_id):
@@ -183,20 +177,48 @@ def profile():
 @app.route("/profile/update", methods=["POST"])
 @token_required
 def profile_update():
-    interests = request.form.get("interests", "")
-    description = request.form.get("description", "")
+   interests = request.form.get('interests', '')
+   description = request.form.get('description', '')
+   
+   success = update_user_profile(
+      request.current_user_id,
+      interests,
+      description
+   )
+   
+   if success:
+      return redirect(url_for('study'))
+   else:
+      return render_template('profile.html', error="프로필 업데이트에 실패했습니다. 다시 시도해주세요.")
+      
 
-    success = update_user_profile(request.current_user_id, interests, description)
+@app.route("/study/create", methods=['POST'])
+@token_required
+def create_study():
+   db = get_db()
+   data = request.get_json()
+   
+   name = data.get("studyName")
+   host_id = "test_user"
+   description = data.get("studyIntro")
+   category = data.get("category")
+   max_participants = data.get("maxParticipants")
+   candidate = [item['selectedDate'] for item in data['expectedDateList']]
 
-    if success:
-        return redirect(url_for("study"))
-    else:
-        return render_template(
-            "profile.html", error="프로필 업데이트에 실패했습니다. 다시 시도해주세요."
-        )
+   study = {
+      "name": name,
+      "host_id": host_id,
+      "description": description,
+      "category": category,
+      "max_participants": max_participants,
+      "candidate": candidate
+   }
+
+   db.study.insert_one(study)
+   return jsonify({'result': 'success'})
 
 
-@app.route("/logout")
+@app.route('/logout')
 def logout():
     return handle_logout()
 
