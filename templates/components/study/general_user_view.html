@@ -1,14 +1,19 @@
 <!-- 일반 사용자 뷰 -->
 <div class="mb-4 flex items-center space-x-2">
-  <span class="{{ 'bg-gray-100 text-gray-600' if study.is_closed else 'bg-blue-100 text-blue-800' }} text-sm px-2 py-1 rounded-full"
+  <span
+    class="{{ 'bg-gray-100 text-gray-600' if study.is_closed else 'bg-blue-100 text-blue-800' }} text-sm px-2 py-1 rounded-full"
     >{{ study.subject }}</span
   >
   {% if study.is_closed %}
-  <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+  <span
+    class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full"
+  >
     마감
   </span>
   {% else %}
-  <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+  <span
+    class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full"
+  >
     모집중
   </span>
   {% endif %}
@@ -30,29 +35,29 @@
     <span class="text-gray-500">스터디 일정</span>
     <span class="font-medium">{{ to_datetime_str(study.study_date) }}</span>
   </div>
-  {% endif %} {% if study.candidate %}
-  <div class="text-sm {{ 'opacity-50' if study.is_closed else '' }}">
+  {% endif %} {% if study.candidate %} {% set is_disabled = study.is_closed or
+  study.application_status in ['confirmed', 'pending'] %}
+  <div class="text-sm {{ 'opacity-50' if is_disabled else '' }}">
     <span class="text-gray-500 mb-2 block">
-      {% if study.is_closed %}
-        참여 신청이 마감되었습니다
-      {% else %}
-        참여 가능한 날짜를 선택하세요
-      {% endif %}
+      {% if study.is_closed %} 참여 신청이 마감되었습니다 {% elif
+      study.application_status == 'confirmed' %} 이미 참여가 확정되었습니다 {%
+      elif study.application_status == 'pending' %} 이미 지원한 스터디입니다 {%
+      else %} 참여 가능한 날짜를 선택하세요 {% endif %}
     </span>
     <div class="space-y-2" id="date-selection">
       {% set unique_dates = [] %} {% for candidate in study.candidate %} {% if
       candidate.date not in unique_dates %} {% set _ =
       unique_dates.append(candidate.date) %} {% endif %} {% endfor %} {% for
       date in unique_dates %}
-      <label class="flex items-center space-x-2 {{ 'cursor-not-allowed' if study.is_closed else 'cursor-pointer' }}">
-        <input
-          type="checkbox"
-          name="selected_dates"
-          value="{{ date }}"
-          class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-          {{ 'disabled' if study.is_closed else '' }}
-        />
-        <span class="font-medium {{ 'text-gray-400' if study.is_closed else '' }}">{{ to_datetime_str(date) }}</span>
+      <label
+        class="flex items-center space-x-2 {{ 'cursor-not-allowed' if is_disabled else 'cursor-pointer' }}"
+      >
+        <input type="checkbox" name="selected_dates" value="{{ date }}"
+        class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" {{
+        'disabled' if is_disabled else '' }} />
+        <span class="font-medium {{ 'text-gray-400' if is_disabled else '' }}"
+          >{{ to_datetime_str(date) }}</span
+        >
       </label>
       {% endfor %}
     </div>
@@ -73,6 +78,22 @@
 >
   참여 신청 마감
 </button>
+{% elif study.application_status == 'confirmed' %}
+<button
+  type="button"
+  class="w-full bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed"
+  disabled
+>
+  참여 확정됨
+</button>
+{% elif study.application_status == 'pending' %}
+<button
+  type="button"
+  class="w-full bg-yellow-500 text-white py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed"
+  disabled
+>
+  지원 대기중
+</button>
 {% else %}
 <button
   type="button"
@@ -82,39 +103,3 @@
   스터디 참여하기
 </button>
 {% endif %}
-
-<script>
-  async function applyToStudy(studyId) {
-    const selectedDates = [];
-    const checkboxes = document.querySelectorAll(
-      ' input[name="selected_dates" ]:checked'
-    );
-    checkboxes.forEach((checkbox) => {
-      selectedDates.push(checkbox.value);
-    });
-    if (selectedDates.length === 0) {
-      alert("참여하고 싶은 날짜를 선택해주세요.");
-      return;
-    }
-    try {
-      const response = await fetch(`/study/${studyId}/apply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Requested-With": "XMLHttpRequest",
-        },
-        body: JSON.stringify({ selected_dates: selectedDates }),
-      });
-      if (response.ok) {
-        alert("스터디 참여 신청이 완료되었습니다!");
-        closeDetail();
-      } else {
-        const errorText = await response.text();
-        alert(`신청 실패: ${errorText}`);
-      }
-    } catch (error) {
-      console.error("스터디 신청 오류:", error);
-      alert("신청 중 오류가 발생했습니다. 다시 시도해주세요.");
-    }
-  }
-</script>

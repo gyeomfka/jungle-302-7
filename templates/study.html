@@ -254,6 +254,7 @@ block nav_tabs %}
         >1</a
       >
     </li>
+    {% if tab == 'all' or tab == '' or not tab %}
     <li>
       <a
         href="#"
@@ -269,6 +270,7 @@ block nav_tabs %}
         >3</a
       >
     </li>
+    {% endif %}
     <!-- Next -->
     <li>
       <a
@@ -296,5 +298,3 @@ block nav_tabs %}
 </nav>
 
 {% endblock %}
-
-<!-- TODO: 무한 스크롤 구현 -->

@@ -74,12 +74,21 @@
         clip-rule="evenodd"
       ></path>
     </svg>
-    <div>
+    <div class="flex-1">
       <h4 class="text-sm font-medium text-green-800">참여가 확정되었습니다!</h4>
       <p class="text-xs text-green-700 mt-1">
         스터디 진행에 관한 자세한 내용은 호스트에게 문의하세요.
       </p>
     </div>
+    {% if not study.is_closed %}
+    <button
+      type="button"
+      onclick="withdrawApplication('{{ study.id }}')"
+      class="ml-4 text-xs px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+    >
+      참여 철회
+    </button>
+    {% endif %}
   </div>
 </div>
 {% endif %}
@@ -99,12 +108,19 @@
         clip-rule="evenodd"
       ></path>
     </svg>
-    <div>
+    <div class="flex-1">
       <h4 class="text-sm font-medium text-yellow-800">참여 대기중입니다</h4>
       <p class="text-xs text-yellow-700 mt-1">
         호스트의 승인을 기다리고 있습니다.
       </p>
     </div>
+    <button
+      type="button"
+      onclick="withdrawApplication('{{ study.id }}')"
+      class="ml-4 text-xs px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500"
+    >
+      지원 철회
+    </button>
   </div>
 </div>
 {% endif %}
