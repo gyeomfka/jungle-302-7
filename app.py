@@ -82,7 +82,7 @@ def study():
     search_keyword = request.args.get("searchKeyword", "")
     category = request.args.get("category")
     
-    is_closed = request.args.get("isClosed")
+    is_closed = request.args.get("is_closed")
     context={}
     if is_closed is not None:
         context["is_closed"] = is_closed
@@ -263,15 +263,16 @@ def study_delete(study_id):
 
 @app.route("/study/<string:study_id>/confirm-candidates", methods=["POST"])
 @token_required
-def confirm_candidates(study_id):
+def confirm_candidates(study_id):    
     if request.headers.get("X-Requested-With") != "XMLHttpRequest":
         return make_response("잘못된 요청입니다.", 400)
 
     try:
         data = request.get_json()
+
         confirmed_candidates = data.get("confirmed_candidates", [])
         study_date = data.get("study_date")
-
+        
         # 스터디 날짜가 필수인지 확인
         if not study_date:
             return make_response("스터디 진행 날짜를 선택해주세요.", 400)
@@ -284,9 +285,7 @@ def confirm_candidates(study_id):
             return make_response(message, 200)
         else:
             return make_response(message, 400)
-
     except Exception as e:
-        print(f"참가자 확정 API 오류: {e}")
         return make_response("확정 처리 중 오류가 발생했습니다.", 500)
 
 

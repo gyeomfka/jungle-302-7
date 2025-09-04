@@ -150,7 +150,7 @@ def update_confirmed_candidates(study_id, confirmed_candidates, study_date=None)
     """스터디의 확정 참가자와 날짜를 업데이트합니다."""
     try:
         db = get_db()
-
+        
         # 스터디 존재 확인
         study = db.study.find_one({"id": study_id})
         if not study:

@@ -1,5 +1,15 @@
 let temporaryConfirmed = [];
 
+function updateConfirmedCount() {
+  const confirmedElements = document.querySelectorAll(
+    "#confirmed-list [data-user-id]"
+  );
+  const countElement = document.getElementById("confirmed-count");
+  if (countElement) {
+    countElement.textContent = confirmedElements.length;
+  }
+}
+
 function addToConfirmed(userId) {
   const candidateElement = document.querySelector(
     `#candidate-list [data-user-id="${userId}"]`
@@ -29,11 +39,14 @@ function addToConfirmed(userId) {
           </button>
           <button type="button" onclick="removeFromConfirmed('${userId}')" 
                   class="text-xs px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">
-            제거
+            제외
           </button>
         </div>
       `;
     confirmedList.appendChild(confirmedElement);
+
+    // 확정자 수 업데이트
+    updateConfirmedCount();
   }
 }
 
@@ -71,6 +84,9 @@ function removeFromConfirmed(userId) {
         </div>
       `;
     candidateList.appendChild(candidateElement);
+
+    // 확정자 수 업데이트
+    updateConfirmedCount();
   }
 }
 
@@ -80,6 +96,7 @@ async function confirmCandidates(studyId) {
     'input[name="study_date"]:checked'
   );
   if (!selectedDate) {
+    console.log("[확정실패] 날짜 선택 안됨");
     alert("스터디 진행 날짜를 선택해주세요.");
     return;
   }
@@ -93,21 +110,24 @@ async function confirmCandidates(studyId) {
   );
 
   if (allConfirmedIds.length === 0) {
+    console.log("[확정실패] 확정할 참가자 없음");
     alert("확정할 참가자가 없습니다.");
     return;
   }
 
   try {
+    const requestBody = {
+      confirmed_candidates: allConfirmedIds,
+      study_date: selectedDate.value,
+    };
+
     const response = await fetch(`/study/${studyId}/confirm-candidates`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Requested-With": "XMLHttpRequest",
       },
-      body: JSON.stringify({
-        confirmed_candidates: allConfirmedIds,
-        study_date: dateFormatter(selectedDate.value),
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (response.ok) {
@@ -115,10 +135,10 @@ async function confirmCandidates(studyId) {
       closeDetail();
     } else {
       const errorText = await response.text();
+
       alert(`확정 실패: ${errorText}`);
     }
   } catch (error) {
-    console.error("참가자 확정 오류:", error);
     alert("확정 중 오류가 발생했습니다. 다시 시도해주세요.");
   }
 }

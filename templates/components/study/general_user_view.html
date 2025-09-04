@@ -1,10 +1,10 @@
 <!-- 일반 사용자 뷰 -->
 <div class="mb-4 flex items-center space-x-2">
   <span
-    class="{{ 'bg-gray-100 text-gray-600' if study.is_closed else 'bg-blue-100 text-blue-800' }} text-sm px-2 py-1 rounded-full"
+    class="{{ 'bg-gray-100 text-gray-600' if study.get('is_closed', False) else 'bg-blue-100 text-blue-800' }} text-sm px-2 py-1 rounded-full"
     >{{ study.subject }}</span
   >
-  {% if study.is_closed %}
+  {% if study.get('is_closed', False) %}
   <span
     class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full"
   >
@@ -35,14 +35,16 @@
     <span class="text-gray-500">스터디 일정</span>
     <span class="font-medium">{{ to_datetime_str(study.study_date) }}</span>
   </div>
-  {% endif %} {% if study.candidate %} {% set is_disabled = study.is_closed or
-  study.application_status in ['confirmed', 'pending'] %}
+  {% endif %} {% if study.candidate %} {% set is_disabled =
+  study.get('is_closed', False) or study.get('application_status') in
+  ['confirmed', 'pending'] %}
   <div class="text-sm {{ 'opacity-50' if is_disabled else '' }}">
     <span class="text-gray-500 mb-2 block">
-      {% if study.is_closed %} 참여 신청이 마감되었습니다 {% elif
-      study.application_status == 'confirmed' %} 이미 참여가 확정되었습니다 {%
-      elif study.application_status == 'pending' %} 이미 지원한 스터디입니다 {%
-      else %} 참여 가능한 날짜를 선택하세요 {% endif %}
+      {% if study.get('is_closed', False) %} 참여 신청이 마감되었습니다 {% elif
+      study.get('application_status') == 'confirmed' %} 이미 참여가
+      확정되었습니다 {% elif study.get('application_status') == 'pending' %}
+      이미 지원한 스터디입니다 {% else %} 참여 가능한 날짜를 선택하세요 {% endif
+      %}
     </span>
     <div class="space-y-2" id="date-selection">
       {% set unique_dates = [] %} {% for candidate in study.candidate %} {% if
@@ -70,7 +72,7 @@
   </div>
 </div>
 
-{% if study.is_closed %}
+{% if study.get('is_closed', False) %}
 <button
   type="button"
   class="w-full bg-gray-400 text-gray-600 py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed"
@@ -78,7 +80,7 @@
 >
   참여 신청 마감
 </button>
-{% elif study.application_status == 'confirmed' %}
+{% elif study.get('application_status') == 'confirmed' %}
 <button
   type="button"
   class="w-full bg-green-500 text-white py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed"
@@ -86,7 +88,7 @@
 >
   참여 확정됨
 </button>
-{% elif study.application_status == 'pending' %}
+{% elif study.get('application_status') == 'pending' %}
 <button
   type="button"
   class="w-full bg-yellow-500 text-white py-2 px-4 rounded-lg text-sm font-medium cursor-not-allowed"

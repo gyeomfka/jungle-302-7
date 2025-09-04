@@ -10,7 +10,6 @@ cfg = get_config()
 def send_study_confirmation_email(user_email, user_name, study_name,
                                   study_date, meeting_link):
     """스터디 참여 확정 이메일을 발송합니다."""
-    user_email = 'quake7289@gmail.com'
     try:
         # Gmail SMTP 설정
         smtp_server = "smtp.gmail.com"

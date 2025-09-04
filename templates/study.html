@@ -34,7 +34,7 @@ block nav_tabs %}
 {% endblock %} {% block scripts %}
 <script>
   const tab = "{{ tab }}";
-  let isClosed = "{{ is_closed }}";
+  let is_closed = "{{ is_closed }}";
 
   document.addEventListener("DOMContentLoaded", function () {
     // Flask에서 넘겨받은 category 값
@@ -46,18 +46,18 @@ block nav_tabs %}
     }
 
     const btn = document.getElementById("searchToggle");
-    btn.classList.toggle("bg-blue-500", isClosed);
-    btn.classList.toggle("bg-white", !isClosed);
+    btn.classList.toggle("bg-blue-500", is_closed);
+    btn.classList.toggle("bg-white", !is_closed);
 
-    btn.classList.toggle("text-white", isClosed);
-    btn.classList.toggle("text-gray-700", !isClosed);
+    btn.classList.toggle("text-white", is_closed);
+    btn.classList.toggle("text-gray-700", !is_closed);
 
-    btn.classList.toggle("border-blue-600", isClosed);
-    btn.classList.toggle("border-gray-300", !isClosed);
+    btn.classList.toggle("border-blue-600", is_closed);
+    btn.classList.toggle("border-gray-300", !is_closed);
   });
 
   function searchToggle() {
-    isClosed = !isClosed;
+    is_closed = !is_closed;
     searchCondition(tab);
   }
 
@@ -140,8 +140,8 @@ block nav_tabs %}
       url += `&category=${encodeURIComponent(category.trim())}`;
     }
 
-    if (isClosed) {
-      url += `&isClosed=${!isClosed}`;
+    if (is_closed) {
+      url += `&is_closed=${!is_closed}`;
     }
 
     window.location.href = url;
@@ -211,12 +211,12 @@ block nav_tabs %}
 </div>
 
 <!-- 메인 콘텐츠 -->
-<div class="flex mx-auto px-4 py-6 gap-4" id="study_wrapper">
-  <div class="max-w-6xl flex-1">
+<div class="flex mx-auto px-4 py-6 gap-4 h-[70vh]" id="study_wrapper">
+  <div class="flex-1 overflow-y-auto max-w-6xl">
     {% if studies %} {% include "components/study/study_list.html" %} {% else %}
     {% include "components/study/empty_state.html" %} {% endif %}
   </div>
-  <!-- 스터디 상세보기 생성 위치 -->
+  <!-- 스터디 상세보기 생성 위치 (고정 효과) -->
 </div>
 
 <nav class="flex items-center justify-center mt-1 mb-6" aria-label="Pagination">

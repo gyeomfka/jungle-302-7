@@ -44,7 +44,8 @@
   <div class="border rounded-lg p-4">
     <h3 class="font-semibold text-gray-900 mb-3 text-center">확정 참가자</h3>
     <div class="text-center text-gray-500 text-sm mb-2">
-      {{ confirmed_participants|length }}/{{ study.max_participants }}
+      <span id="confirmed-count">{{ confirmed_participants|length }}</span>/{{
+      study.max_participants }}
     </div>
     <div id="confirmed-list" class="space-y-2 overflow-y-auto max-h-64">
       {% for participant in confirmed_participants %}
