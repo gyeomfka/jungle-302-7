@@ -25,8 +25,8 @@ class BaseConfig:
 class DevConfig(BaseConfig):
     """개발: AWS EC2의 원격 MongoDB로 접속"""
     # 예) EC2 퍼블릭 IP 또는 도메인
-    EC2_HOST = os.environ.get("EC2_HOST")
     EC2_PORT = 27017
+    EC2_HOST = os.environ.get("EC2_HOST")
 
     # mongodb://admin:비번@EC2_IP:27017/?authSource=admin
     MONGO_URI = (
@@ -41,6 +41,7 @@ class ProdConfig(BaseConfig):
     # 1) TCP(기본): localhost:27017
     LOCAL_HOST = os.environ.get("LOCAL_HOST", "127.0.0.1")
     LOCAL_PORT = 27017
+    EC2_HOST = os.environ.get("EC2_HOST")
 
     @property
     def MONGO_URI(self):

@@ -477,18 +477,27 @@ def room(room_id, user_id):
     if not roomFound:
         return redirect(url_for("error"))
     
+    print('----------------------------')
+    print(roomFound)
     # user_id가 db에 있는지 확인
     userFound = db.user.find_one({'id': user_id})
     if not userFound:
         return redirect(url_for("error"))
     
+    print(userFound)
     # 방을 만들어도 되는 시간 인지 (start_date + 3시간)
 
     start_time = datetime.fromisoformat(roomFound["start_date"])
     # start_time = (roomFound["start_date"])
     expire_time = start_time + timedelta(hours=3)
 
+    print(start_time)
+    print(expire_time)
+    print(datetime.now() > expire_time)
+    print(datetime.now() < start_time - timedelta(minutes=10))
+    print(datetime.now() > expire_time) or (datetime.now() < start_time - timedelta(minutes=10))
     if (datetime.now() > expire_time) or (datetime.now() < start_time - timedelta(minutes=10)):
+        print('date error')
         return redirect(url_for("error"))
     
     session["room"] = room_id
@@ -497,7 +506,7 @@ def room(room_id, user_id):
     # 입력한 room_id가 rooms에 없으면 새로운 방 생성
     if room_id not in rooms:
         rooms[room_id] = {"members" : 0, "userIDs":{}}
-    
+    print('==============render html===============')
     return render_template("room.html", room_id=room_id, username = userFound["name"], to_datetime_str=to_datetime_str)
     # return render_template("room.html", room_id=room_id, username = "userFound")
 
