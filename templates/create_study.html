@@ -92,11 +92,23 @@ endblock %} {% block page_content %}
   let expectedDateList = [];
   let counter = 0;
 
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-  tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
-  document.getElementById('expectedDate').min = tomorrow.toISOString().slice(0, 16);
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  document.getElementById("expectedDate").min = now.toISOString().slice(0, 16);
+
+  // 실시간 시간 검증
+  document
+    .getElementById("expectedDate")
+    .addEventListener("change", function (e) {
+      const selectedDate = new Date(e.target.value);
+      const currentDate = new Date();
+
+      if (selectedDate < currentDate) {
+        alert("과거 시간은 선택할 수 없습니다.");
+        e.target.value = "";
+        return;
+      }
+    });
 
   (function () {
     $("#createStudyForm").on("submit", function (e) {
@@ -135,6 +147,8 @@ endblock %} {% block page_content %}
     $("#expectedDate").on("change", function () {
       const selectedDate = $(this).val();
 
+      if (!selectedDate) return;
+
       if (
         $("#expectedDateList").find(`li[data-date='${selectedDate}']`)
           .length === 0
@@ -172,5 +186,3 @@ endblock %} {% block page_content %}
   })();
 </script>
 {% endblock %}
-
-<!-- TODO: 지나간 날짜와 시간은 선택 불가 -->

@@ -186,7 +186,8 @@ def update_confirmed_candidates(study_id, confirmed_candidates, study_date=None)
                     create_study_confirmation_notification(
                         confirmed_candidates,
                         study_name,
-                        final_date
+                        final_date,
+                        study.get("host_id")
                     )
             except Exception as notification_error:
                 print(f"알림 발송 오류 (스터디 확정은 완료됨): {notification_error}")
