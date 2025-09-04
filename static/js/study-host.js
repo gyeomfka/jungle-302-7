@@ -201,3 +201,35 @@ function closeUserProfileModal() {
     modal.remove();
   }
 }
+
+async function deleteStudy(studyId) {
+  if (
+    !confirm(
+      "정말로 이 스터디를 삭제하시겠습니까?\n삭제된 스터디는 복구할 수 없습니다."
+    )
+  ) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/study/${studyId}/delete`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+    });
+
+    if (response.ok) {
+      alert("스터디가 삭제되었습니다.");
+      // 스터디 목록으로 이동
+      window.location.href = "/study";
+    } else {
+      const errorText = await response.text();
+      alert(`삭제 실패: ${errorText}`);
+    }
+  } catch (error) {
+    console.error("스터디 삭제 오류:", error);
+    alert("삭제 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+  }
+}

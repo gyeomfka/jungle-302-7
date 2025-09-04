@@ -1,5 +1,6 @@
 from db import get_db
 from utils.video_chat import create_study_confirmation_notification
+from utils.notification import create_notification
 
 
 def get_studies_by_tab(user_id, tab, search_keyword=None, category=None, is_closed=None):
@@ -36,8 +37,6 @@ def get_studies_by_tab(user_id, tab, search_keyword=None, category=None, is_clos
 
         if is_closed:
             query["is_closed"] = str_to_bool(is_closed)
-
-        print(query)
 
         studies = list(db.study.find(query))
 
@@ -200,6 +199,91 @@ def update_confirmed_candidates(study_id, confirmed_candidates, study_date=None)
         print(f"참가자 확정 오류: {e}")
         return False, "확정 처리 중 오류가 발생했습니다."
 
+
+
+def withdraw_from_study(study_id, user_id):
+    """스터디 지원을 철회합니다."""
+    try:
+        db = get_db()
+
+        # 스터디 존재 확인
+        study = db.study.find_one({"id": study_id})
+        if not study:
+            return False, "스터디를 찾을 수 없습니다."
+
+        # 스터디가 이미 마감된 경우 철회 불가
+        if study.get('is_closed'):
+            return False, "이미 마감된 스터디에서는 철회할 수 없습니다."
+
+        # confirmed_candidate에서 제거
+        was_confirmed = user_id in study.get("confirmed_candidate", [])
+        if was_confirmed:
+            db.study.update_one(
+                {"id": study_id},
+                {"$pull": {"confirmed_candidate": user_id}}
+            )
+
+        # candidate에서 사용자 ID 제거
+        withdrawn = False
+        for candidate in study.get("candidate", []):
+            if user_id in candidate.get("user_id", []):
+                db.study.update_one(
+                    {"id": study_id, "candidate.date": candidate["date"]},
+                    {"$pull": {"candidate.$.user_id": user_id}}
+                )
+                withdrawn = True
+
+        if not withdrawn and not was_confirmed:
+            return False, "지원하지 않은 스터디입니다."
+
+        # 호스트에게 알림 생성
+        host_id = study.get("host_id")
+        if host_id:
+            # 사용자 정보 조회
+            user = db.user.find_one({"id": user_id})
+            user_name = user.get("name", "사용자") if user else "사용자"
+            
+            status_text = "확정 참가자" if was_confirmed else "지원자"
+            message = f"{user_name}님이 '{study.get('name', '스터디')}'에서 {status_text} 철회했습니다."
+            
+            create_notification(host_id, message)
+
+        return True, "지원이 철회되었습니다."
+
+    except Exception as e:
+        print(f"지원 철회 오류: {e}")
+        return False, "철회 처리 중 오류가 발생했습니다."
+
+
+def delete_study(study_id, user_id):
+    """스터디를 삭제합니다. (호스트만 가능)"""
+    try:
+        db = get_db()
+
+        # 스터디 존재 확인
+        study = db.study.find_one({"id": study_id})
+        if not study:
+            return False, "스터디를 찾을 수 없습니다."
+
+        # 호스트 권한 확인
+        if study.get("host_id") != user_id:
+            return False, "스터디를 삭제할 권한이 없습니다."
+
+        # 이미 확정된 스터디는 삭제 불가
+        if study.get('is_closed'):
+            return False, "이미 확정된 스터디는 삭제할 수 없습니다."
+
+        # 스터디 삭제
+        result = db.study.delete_one({"id": study_id})
+        
+        if result.deleted_count > 0:
+            return True, "스터디가 삭제되었습니다."
+        else:
+            return False, "스터디 삭제에 실패했습니다."
+
+    except Exception as e:
+        print(f"스터디 삭제 오류: {e}")
+        return False, "삭제 처리 중 오류가 발생했습니다."
 
 
 def get_application_status(study, user_id):

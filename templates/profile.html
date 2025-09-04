@@ -1,9 +1,6 @@
-{% extends "authenticated_base.html" %} 
-{% from "components/tag_buttons.html" import tag_buttons, tag_button_script %} 
-
-{% block title %}My Profile{% endblock %}
-
-{% block page_content %}
+{% extends "authenticated_base.html" %} {% from "components/tag_buttons.html"
+import tag_buttons, tag_button_script %} {% block title %}My Profile{% endblock
+%} {% block page_content %}
 <div class="flex items-center justify-center p-4">
   <div class="bg-white rounded-lg shadow-md p-8 w-full max-w-md">
     <h1 class="text-xl font-bold text-center text-gray-800 mb-6">My Profile</h1>
@@ -45,32 +42,24 @@
     </form>
   </div>
 </div>
-{% endblock %} 
-
-{% block scripts %} 
-{{ tag_button_script() }}
+{% endblock %} {% block scripts %} {{ tag_button_script() }}
 
 <script>
   // 폼 제출 처리
-  document.getElementById('profileForm').addEventListener('submit', function(e) {
+  document
+    .getElementById("profileForm")
+    .addEventListener("submit", function (e) {
       if (getSelectedInterests().length === 0) {
-          e.preventDefault();
-          alert('관심사를 최소 하나 이상 선택해주세요.');
-          return;
+        e.preventDefault();
+        alert("관심사를 최소 하나 이상 선택해주세요.");
+        return;
       }
 
-      if (!document.getElementById('description').value.trim()) {
-          e.preventDefault();
-          alert('자기소개를 입력해주세요.');
-          return;
+      if (!document.getElementById("description").value.trim()) {
+        e.preventDefault();
+        alert("자기소개를 입력해주세요.");
+        return;
       }
-  });
-
-  // 서버 에러 처리
-  {% if error %}
-      alert('{{ error }}');
-  {% endif %}
+    });
 </script>
 {% endblock %}
-
-<!-- TODO: 태그 선택 기본 값 제공 -->

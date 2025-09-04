@@ -24,7 +24,9 @@ from utils.study import (
     get_study_participants,
     update_confirmed_candidates,
     get_studies_by_tab,
-    get_study_by_id
+    get_study_by_id,
+    withdraw_from_study,
+    delete_study
 )
 from utils.notification import (
     get_user_notifications,
@@ -219,6 +221,44 @@ def study_apply(study_id):
     except Exception as e:
         print(f"스터디 신청 API 오류: {e}")
         return make_response("신청 처리 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/study/<string:study_id>/withdraw", methods=["POST"])
+@token_required
+def study_withdraw(study_id):
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+
+    try:
+        success, message = withdraw_from_study(study_id, request.current_user_id)
+
+        if success:
+            return make_response(message, 200)
+        else:
+            return make_response(message, 400)
+
+    except Exception as e:
+        print(f"스터디 철회 API 오류: {e}")
+        return make_response("철회 처리 중 오류가 발생했습니다.", 500)
+
+
+@app.route("/study/<string:study_id>/delete", methods=["DELETE"])
+@token_required
+def study_delete(study_id):
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return make_response("잘못된 요청입니다.", 400)
+
+    try:
+        success, message = delete_study(study_id, request.current_user_id)
+
+        if success:
+            return make_response(message, 200)
+        else:
+            return make_response(message, 400)
+
+    except Exception as e:
+        print(f"스터디 삭제 API 오류: {e}")
+        return make_response("삭제 처리 중 오류가 발생했습니다.", 500)
 
 
 @app.route("/study/<string:study_id>/confirm-candidates", methods=["POST"])
