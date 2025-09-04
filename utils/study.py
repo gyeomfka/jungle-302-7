@@ -38,7 +38,7 @@ def get_studies_by_tab(user_id, tab, search_keyword=None, category=None, is_clos
         if is_closed:
             query["is_closed"] = str_to_bool(is_closed)
 
-        studies = list(db.study.find(query))
+        studies = list(db.study.find(query).sort("_id", -1))
 
         # 각 스터디에 대한 지원 상태 정보 추가
         for study in studies:
