@@ -92,6 +92,12 @@ endblock %} {% block page_content %}
   let expectedDateList = [];
   let counter = 0;
 
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
+  document.getElementById('expectedDate').min = tomorrow.toISOString().slice(0, 16);
+
   (function () {
     $("#createStudyForm").on("submit", function (e) {
       e.preventDefault();
