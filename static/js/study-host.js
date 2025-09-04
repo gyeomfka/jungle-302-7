@@ -90,6 +90,40 @@ function removeFromConfirmed(userId) {
   }
 }
 
+function showConfirmLoading() {
+  // 버튼 상태 변경
+  const confirmBtn = document.getElementById("confirm-btn");
+  const confirmBtnText = document.getElementById("confirm-btn-text");
+  const confirmSpinner = document.getElementById("confirm-loading-spinner");
+  const overlay = document.getElementById("confirm-loading-overlay");
+  
+  if (confirmBtn && confirmBtnText && confirmSpinner && overlay) {
+    confirmBtn.disabled = true;
+    confirmBtn.classList.add("opacity-75", "cursor-not-allowed");
+    confirmBtn.classList.remove("hover:bg-indigo-700");
+    confirmBtnText.textContent = "처리 중...";
+    confirmSpinner.classList.remove("hidden");
+    overlay.classList.remove("hidden");
+  }
+}
+
+function hideConfirmLoading() {
+  // 버튼 상태 복원
+  const confirmBtn = document.getElementById("confirm-btn");
+  const confirmBtnText = document.getElementById("confirm-btn-text");
+  const confirmSpinner = document.getElementById("confirm-loading-spinner");
+  const overlay = document.getElementById("confirm-loading-overlay");
+  
+  if (confirmBtn && confirmBtnText && confirmSpinner && overlay) {
+    confirmBtn.disabled = false;
+    confirmBtn.classList.remove("opacity-75", "cursor-not-allowed");
+    confirmBtn.classList.add("hover:bg-indigo-700");
+    confirmBtnText.textContent = "확정";
+    confirmSpinner.classList.add("hidden");
+    overlay.classList.add("hidden");
+  }
+}
+
 async function confirmCandidates(studyId) {
   // 선택된 날짜 확인
   const selectedDate = document.querySelector(
@@ -115,6 +149,9 @@ async function confirmCandidates(studyId) {
     return;
   }
 
+  // 로딩 상태 표시
+  showConfirmLoading();
+
   try {
     const requestBody = {
       confirmed_candidates: allConfirmedIds,
@@ -135,11 +172,13 @@ async function confirmCandidates(studyId) {
       closeDetail();
     } else {
       const errorText = await response.text();
-
       alert(`확정 실패: ${errorText}`);
     }
   } catch (error) {
     alert("확정 중 오류가 발생했습니다. 다시 시도해주세요.");
+  } finally {
+    // 로딩 상태 해제
+    hideConfirmLoading();
   }
 }
 

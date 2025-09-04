@@ -11,6 +11,8 @@ def send_study_confirmation_email(user_email, user_name, study_name,
                                   study_date, meeting_link):
     """스터디 참여 확정 이메일을 발송합니다."""
     try:
+        server_url = getattr(cfg, 'EC2_HOST', None)
+
         # Gmail SMTP 설정
         smtp_server = "smtp.gmail.com"
         smtp_port = 587
@@ -46,7 +48,7 @@ def send_study_confirmation_email(user_email, user_name, study_name,
 {study_name} 스터디 참여가 확정되었습니다.
 
 📅 일정: {formatted_date}
-🔗 화상 채팅 링크: {meeting_link}
+🔗 화상 채팅 링크: http://{server_url}{meeting_link}
 
 위 일정에 맞춰 링크를 통해 화상 채팅 스터디에 참여해 주세요.
 
