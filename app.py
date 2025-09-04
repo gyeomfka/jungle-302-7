@@ -477,8 +477,6 @@ def room(room_id, user_id):
     if not roomFound:
         return redirect(url_for("error"))
     
-    print('----------------------------')
-    print(roomFound)
     # user_id가 db에 있는지 확인
     userFound = db.user.find_one({'id': user_id})
     if not userFound:
@@ -491,12 +489,8 @@ def room(room_id, user_id):
     # start_time = (roomFound["start_date"])
     expire_time = start_time + timedelta(hours=3)
 
-    print(start_time)
-    print(expire_time)
-    print(datetime.now() > expire_time)
-    print(datetime.now() < start_time - timedelta(minutes=10))
-    print(datetime.now() > expire_time) or (datetime.now() < start_time - timedelta(minutes=10))
-    if (datetime.now() > expire_time) or (datetime.now() < start_time - timedelta(minutes=10)):
+    current_korea_time = datetime.now() + timedelta(hours=9)
+    if (current_korea_time > expire_time) or (current_korea_time < start_time - timedelta(minutes=10)):
         print('date error')
         return redirect(url_for("error"))
     
@@ -506,7 +500,7 @@ def room(room_id, user_id):
     # 입력한 room_id가 rooms에 없으면 새로운 방 생성
     if room_id not in rooms:
         rooms[room_id] = {"members" : 0, "userIDs":{}}
-    print('==============render html===============')
+
     return render_template("room.html", room_id=room_id, username = userFound["name"], to_datetime_str=to_datetime_str)
     # return render_template("room.html", room_id=room_id, username = "userFound")
 
