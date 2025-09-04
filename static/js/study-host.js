@@ -106,7 +106,7 @@ async function confirmCandidates(studyId) {
       },
       body: JSON.stringify({
         confirmed_candidates: allConfirmedIds,
-        study_date: selectedDate.value,
+        study_date: dateFormatter(selectedDate.value),
       }),
     });
 

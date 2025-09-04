@@ -21,13 +21,24 @@
     <span class="font-medium">{{ study.confirmed_candidate|length }}명</span>
   </div>
 
-  {% if study.study_date %}
   <div class="flex items-center justify-between text-sm">
     <span class="text-gray-500">예상 모임 날짜</span>
     <div class="text-right">
       {% for candidate in study.candidate %}
-      <div class="font-medium text-sm">{{ candidate.date }}</div>
+      <div class="font-medium text-sm">
+        {{ to_datetime_str(candidate.date) }}
+      </div>
       {% endfor %}
+    </div>
+  </div>
+
+  {% if study.study_date %}
+  <div class="flex items-center justify-between text-sm">
+    <span class="text-gray-500">확정 모임 날짜</span>
+    <div class="text-right">
+      <div class="font-medium text-sm">
+        {{ to_datetime_str(study.study_date) }}
+      </div>
     </div>
   </div>
   {% endif %}

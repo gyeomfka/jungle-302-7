@@ -32,6 +32,7 @@ from utils.notification import (
     mark_notification_as_read,
     mark_all_notifications_as_read
 )
+from utils.date_utils import to_datetime_str
 
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_socketio import SocketIO, join_room, leave_room, emit, send, disconnect
@@ -91,7 +92,7 @@ def study():
     # 탭에 따라 스터디 데이터 조회
     studies = get_studies_by_tab(request.current_user_id, tab, search_keyword, category, is_closed) 
 
-    return render_template('study.html', studies=studies, tab=tab, search_keyword=search_keyword, category=category, **context)
+    return render_template('study.html', studies=studies, tab=tab, search_keyword=search_keyword, category=category, **context, to_datetime_str=to_datetime_str)
 
 
 
@@ -99,7 +100,7 @@ def study():
 @token_required
 def study_create_page():
     if request.method == 'GET':
-        return render_template("create_study.html")
+        return render_template("create_study.html", to_datetime_str=to_datetime_str)
 
 
 @app.route("/study/create", methods=['POST'])
@@ -188,7 +189,8 @@ def study_detail(study_id):
         current_user_id=current_user_id,
         confirmed_participants=confirmed_participants,
         pending_candidates=pending_candidates,
-        tab=tab
+        tab=tab, 
+        to_datetime_str=to_datetime_str
     )
     response = make_response(html, 200)
     response.headers["Content-Type"] = "text/html; charset=utf-8"
@@ -276,7 +278,7 @@ def user_profile_api(user_id):
 def profile():
     # 현재 사용자 프로필 정보 가져오기
     user_profile = get_user_profile(request.current_user_id)
-    return render_template("profile.html", user_profile=user_profile)
+    return render_template("profile.html", user_profile=user_profile, to_datetime_str=to_datetime_str)
 
 
 @app.route("/profile/update", methods=["POST"])
@@ -298,7 +300,7 @@ def profile_update():
     else:
         return render_template(
             'profile.html',
-            error="프로필 업데이트에 실패했습니다. 다시 시도해주세요."
+            error="프로필 업데이트에 실패했습니다. 다시 시도해주세요.", to_datetime_str=to_datetime_str
         )
 
 @app.route('/logout')
@@ -426,7 +428,7 @@ rooms = {}
 
 @app.route('/error')
 def error():
-    return render_template("error.html")
+    return render_template("error.html", to_datetime_str=to_datetime_str)
 
 @app.route('/room/<room_id>/<user_id>')
 def room(room_id, user_id):
@@ -457,7 +459,7 @@ def room(room_id, user_id):
     if room_id not in rooms:
         rooms[room_id] = {"members" : 0, "userIDs":{}}
     
-    return render_template("room.html", room_id=room_id, username = userFound["name"])
+    return render_template("room.html", room_id=room_id, username = userFound["name"], to_datetime_str=to_datetime_str)
     # return render_template("room.html", room_id=room_id, username = "userFound")
 
 

@@ -7,16 +7,12 @@ endblock %} {% block content %}
       <div class="flex justify-between items-center">
         <!-- 탭 메뉴 (스터디 페이지에서만 표시) -->
         {% block nav_tabs %}{% endblock %}
+        <div class="flex-1"></div>
 
         <!-- 우측 버튼들 -->
         <div class="flex items-center space-x-4">
-          <button
-            type="button"
-            onclick="location.href='/study/create'"
-            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
-          >
-            스터디 만들기
-          </button>
+          <!-- 스터디 만들기 버튼 (스터디 페이지에서만 표시) -->
+          {% block create_study_button %}{% endblock %}
 
           <!-- 알림 드롭다운 -->
           {% include 'components/header_notifications.html' %}

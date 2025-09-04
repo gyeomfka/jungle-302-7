@@ -52,15 +52,15 @@ endblock %} {% block page_content %}
       "
     >
       <option value="">선택하세요</option>
-      <option value="al">알고리즘</option>
-      <option value="cl">C언어</option>
-      <option value="ds">자료구조</option>
-      <option value="po">PintOS</option>
-      <option value="ws">웹서버</option>
-      <option value="ms">메모리 구조</option>
-      <option value="nw">네트워크</option>
-      <option value="py">파이썬</option>
-      <option value="cs">CS</option>
+      <option value="알고리즘">알고리즘</option>
+      <option value="C언어">C언어</option>
+      <option value="자료구조">자료구조</option>
+      <option value="PintOS">PintOS</option>
+      <option value="웹서버">웹서버</option>
+      <option value="메모리구조">메모리 구조</option>
+      <option value="네트워크">네트워크</option>
+      <option value="파이썬">파이썬</option>
+      <option value="CS">CS</option>
     </select>
 
     <label
@@ -143,7 +143,9 @@ endblock %} {% block page_content %}
 
         $("#expectedDateList ul").append(
           `<li id="${uniqueId}" data-date="${selectedDate}">
-                        ${selectedDate} <button class="remove-btn" style="margin-left:8px;">[x]</button>
+                        ${dateFormatter(
+                          selectedDate
+                        )} <button class="remove-btn" style="margin-left:8px;">[x]</button>
                     </li>`
         );
       }
