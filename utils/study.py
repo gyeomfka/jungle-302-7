@@ -35,7 +35,7 @@ def get_studies_by_tab(user_id, tab, search_keyword=None, category=None, is_clos
             query["subject"] = category
 
         if is_closed:
-            query["is_closed"] = is_closed
+            query["is_closed"] = str_to_bool(is_closed)
 
         print(query)
 
@@ -51,6 +51,10 @@ def get_studies_by_tab(user_id, tab, search_keyword=None, category=None, is_clos
         print(f"스터디 조회 오류: {e}")
         return []
 
+def str_to_bool(value):
+    if isinstance(value, str):
+        return value.lower() in ('true', '1', 'yes', 'on')
+    return bool(value)
 
 def get_study_by_id(study_id):
     """스터디 ID로 특정 스터디를 조회합니다."""
