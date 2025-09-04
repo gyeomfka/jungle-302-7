@@ -473,7 +473,7 @@ def error():
 def room(room_id, user_id):
     db = get_db()
     # room_id가 db에 있는지 확인
-    roomFound = db.video_chat.find_one({'room_id': room_id})
+    roomFound = db.video_chat.find_one({'id': room_id})
     if not roomFound:
         return redirect(url_for("error"))
     
